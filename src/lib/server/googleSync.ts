@@ -48,7 +48,21 @@ async function api(sheetId: string, path: string, init?: { method?: string; body
   if (res.status === 403 || res.status === 404) {
     throw new SheetError(`CargoPilot can't open that sheet. Share it with ${sa.client_email} as Editor, then try again.`);
   }
-  if (!res.ok) throw new SheetError(`Google Sheets error ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!res.ok) {
+    const text = await res.text();
+    // An .xlsx stored in Drive opens in Sheets but can't be edited through the Sheets API.
+    if (/Office file/i.test(text)) {
+      throw new SheetError(
+        "That link is an Excel (.xlsx) file stored in Google Drive, which Google doesn't let apps edit. Open it, choose File → Save as Google Sheets, share the new sheet with " +
+          `${sa.client_email} as Editor, and paste the new link here.`,
+      );
+    }
+    let message = text.slice(0, 200);
+    try {
+      message = JSON.parse(text).error?.message ?? message;
+    } catch {}
+    throw new SheetError(`Google Sheets couldn't complete that (${res.status}): ${message}`);
+  }
   return res.json();
 }
 

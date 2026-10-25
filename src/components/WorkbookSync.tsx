@@ -91,7 +91,10 @@ export function WorkbookSync({ uploadId, google }: { uploadId: string; google: G
                 </button>{" "}
                 {copied && <span className="text-teal-700">copied</span>} as <b>Editor</b>.
               </li>
-              <li>Paste the sheet&apos;s link below. Your Bookings and Items are copied in if the sheet doesn&apos;t have them yet.</li>
+              <li>
+                Paste the sheet&apos;s link below. It must be a Google Sheet — if you opened an .xlsx from Drive, use <b>File → Save as Google Sheets</b> first.
+                Your Bookings and Items are copied in if the sheet doesn&apos;t have them yet.
+              </li>
             </ol>
             <div className="flex gap-2">
               <input className="input" placeholder="https://docs.google.com/spreadsheets/d/…" value={url} onChange={(e) => setUrl(e.target.value)} />
