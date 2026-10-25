@@ -3,7 +3,7 @@
 Book UK → Germany / France / Netherlands shipments in plain language, or upload the Case 2 workbook,
 and catch rulebook errors before the shipment leaves.
 
-**Live:** https://cargopilot-beige.vercel.app (no login)
+**Live:** https://cargopilot-app.vercel.app (no login)
 
 ## What it does
 - **Chat booking** — Gemini extracts only what the seller states, the app asks only for what's missing,
