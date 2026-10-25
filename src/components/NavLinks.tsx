@@ -6,7 +6,7 @@ const LINKS = [
   { href: "/", label: "Dashboard" },
   { href: "/chat", label: "New shipment" },
   { href: "/upload", label: "Upload audit" },
-  { href: "/how-it-works", label: "How it decides" },
+  { href: "/audits", label: "Recent audits" },
 ];
 
 export function NavLinks() {
@@ -14,7 +14,8 @@ export function NavLinks() {
   return (
     <nav className="flex flex-1 items-center gap-1 overflow-x-auto text-sm">
       {LINKS.map((l) => {
-        const active = l.href === "/" ? path === "/" : path.startsWith(l.href);
+        // An individual audit (/audit/…) belongs under "Recent audits".
+        const active = l.href === "/" ? path === "/" : l.href === "/audits" ? path.startsWith("/audit") : path.startsWith(l.href);
         return (
           <Link
             key={l.href}

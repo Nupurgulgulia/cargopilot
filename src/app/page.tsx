@@ -73,7 +73,7 @@ export default async function Dashboard() {
                     <Link href={r.source === "chat" ? `/chat/${r.id}` : `/booking/${r.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
                       <div>
                         <div className="text-sm font-medium text-slate-900">{r.ref} {r.seller && <span className="font-normal text-slate-500">· {r.seller}</span>}</div>
-                        <div className="text-xs text-slate-500">{r.origin ?? "?"} → {r.dest ?? "?"} · {r.source === "chat" ? "chat" : "upload"} · {new Date(r.updated_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</div>
+                        <div className="text-xs text-slate-500">{r.origin ?? "?"} → {r.dest ?? "?"} · {r.source === "chat" ? "chat" : "upload"} · {new Date(r.updated_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/London" })}</div>
                       </div>
                       {r.readiness && <ReadinessBadge r={r.readiness} />}
                     </Link>
@@ -83,7 +83,10 @@ export default async function Dashboard() {
             )}
           </section>
           <section className="card">
-            <h2 className="border-b border-slate-100 px-4 py-3 text-sm font-semibold text-slate-900">Recent audits</h2>
+            <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <h2 className="text-sm font-semibold text-slate-900">Recent audits</h2>
+              <Link href="/audits" className="text-xs font-medium text-teal-700 hover:underline">View all →</Link>
+            </div>
             {uploads.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-slate-500">No workbooks uploaded yet.</p>
             ) : (
@@ -92,7 +95,7 @@ export default async function Dashboard() {
                   <li key={u.id}>
                     <Link href={`/audit/${u.id}`} className="block px-4 py-3 hover:bg-slate-50">
                       <div className="truncate text-sm font-medium text-slate-900">{u.file_name}</div>
-                      <div className="text-xs text-slate-500">{u.booking_count} bookings · {new Date(u.created_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" })}</div>
+                      <div className="text-xs text-slate-500">{u.booking_count} bookings · {new Date(u.created_at).toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short", timeZone: "Europe/London" })}</div>
                     </Link>
                   </li>
                 ))}
