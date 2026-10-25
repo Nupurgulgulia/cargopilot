@@ -3,6 +3,7 @@ import { carrierLabel } from "../carriers";
 import type { BookingView, DataIssue } from "../types";
 import { buildView } from "../view";
 import { sql, type BookingRow } from "./db";
+import { serviceAccountEmail } from "./googleSync";
 
 export interface UploadRowSummary {
   id: string;
@@ -66,6 +67,13 @@ export async function loadUpload(id: string) {
     fileName: up[0].file_name as string,
     createdAt: up[0].created_at as string,
     importIssues: up[0].import_issues as (DataIssue | { level: "info"; message: string })[],
+    google: {
+      enabled: Boolean(serviceAccountEmail()),
+      serviceAccountEmail: serviceAccountEmail(),
+      sheetId: (up[0].google_sheet_id as string | null) ?? null,
+      syncedAt: (up[0].google_synced_at as string | null) ?? null,
+      error: (up[0].google_error as string | null) ?? null,
+    },
     bookings,
   };
 }

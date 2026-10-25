@@ -7,6 +7,7 @@ import type { loadUpload } from "@/lib/server/uploads";
 import type { Readiness } from "@/lib/types";
 import { Download } from "./icons";
 import { READINESS_META, ReadinessBadge } from "./status";
+import { WorkbookSync } from "./WorkbookSync";
 
 type Data = NonNullable<Awaited<ReturnType<typeof loadUpload>>>;
 type Filter = "all" | Readiness;
@@ -34,6 +35,8 @@ export function AuditResults({ data }: { data: Data }) {
         </div>
         <a href={`/api/report?upload=${data.id}`} className="btn-ghost"><Download className="h-4 w-4" /> Download audit report (.xlsx)</a>
       </div>
+
+      <WorkbookSync uploadId={data.id} google={data.google} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Bookings checked" value={data.bookings.length} />

@@ -9,6 +9,7 @@ export const maxDuration = 60;
 const Cell = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 const Body = z.object({
   fileName: z.string().max(255),
+  fileBase64: z.string().max(4_100_000).optional(),
   sheets: z.record(z.string(), z.array(z.array(Cell.optional()).max(200)).max(5000)),
 });
 
@@ -21,8 +22,8 @@ export async function POST(req: Request) {
 
   const issues = [...res.fileIssues, ...res.notes.map((message) => ({ level: "info", message }))];
   const up = await sql`
-    INSERT INTO uploads (session_id, file_name, booking_count, import_issues)
-    VALUES (${sid}, ${parsed.data.fileName}, ${res.bookings.length}, ${JSON.stringify(issues)})
+    INSERT INTO uploads (session_id, file_name, booking_count, import_issues, original_file_b64)
+    VALUES (${sid}, ${parsed.data.fileName}, ${res.bookings.length}, ${JSON.stringify(issues)}, ${parsed.data.fileBase64 ?? null})
     RETURNING id`;
   const uploadId = up[0].id as string;
   for (const b of res.bookings) await createBooking(sid, "upload", b.booking, b.items, uploadId);

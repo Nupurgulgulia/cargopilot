@@ -12,6 +12,8 @@
   "dependencies": {
     "@google/genai": "^2.28.0",
     "@neondatabase/serverless": "^1.0.1",
+    "exceljs": "^4.4.0",
+    "google-auth-library": "^9.15.1",
     "next": "^15.5.28",
     "react": "19.1.0",
     "react-dom": "19.1.0",

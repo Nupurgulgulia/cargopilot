@@ -18,7 +18,10 @@ export default function UploadPage() {
     }
     setBusy(true);
     try {
-      const wb = XLSX.read(await file.arrayBuffer());
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      // Keep a copy of the original file so the updated workbook can be rebuilt from it (up to 3 MB).
+      const fileBase64 = buf.byteLength <= 3_000_000 ? toBase64(buf) : undefined;
       // Only send the sheets we need; Carrier options and Rulebook are fixed in the app.
       const sheets: Record<string, unknown[][]> = {};
       for (const name of wb.SheetNames) {
@@ -30,7 +33,7 @@ export default function UploadPage() {
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name, sheets }),
+        body: JSON.stringify({ fileName: file.name, sheets, fileBase64 }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Upload failed.");
@@ -86,4 +89,11 @@ export default function UploadPage() {
       </div>
     </div>
   );
+}
+
+function toBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
 }

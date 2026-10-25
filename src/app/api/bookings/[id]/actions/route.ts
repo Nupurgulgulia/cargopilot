@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { z } from "zod";
 import { applyChange, ChangeError, clearKeptFor } from "@/lib/changes";
 import { buildView } from "@/lib/view";
 import { getBooking, logCorrections, saveBooking } from "@/lib/server/db";
+import { syncUpload } from "@/lib/server/googleSync";
 import { bookingPayload } from "@/lib/server/payload";
 
 // Error Detective actions: accept a suggested fix, enter a value, keep the original with a reason, confirm.
@@ -53,5 +54,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Any edit after confirmation means the seller has to confirm again.
   if (a.type !== "confirm" && booking.sellerConfirmedAt) booking = { ...booking, sellerConfirmedAt: null };
   const view = await saveBooking(id, booking, items);
+  // Keep a linked Google Sheet up to date without making the seller wait for it.
+  if (row.upload_id) {
+    const uploadId = row.upload_id;
+    after(() => syncUpload(uploadId).catch(() => {}));
+  }
   return NextResponse.json(await bookingPayload((await getBooking(id))!, view));
 }

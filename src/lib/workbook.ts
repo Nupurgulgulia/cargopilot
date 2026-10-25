@@ -25,7 +25,7 @@ export interface ImportResult {
 
 const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z0-9%]+/g, " ").trim();
 
-const BOOKING_COLUMNS: { key: keyof Booking; header: string; aliases?: string[] }[] = [
+export const BOOKING_COLUMNS: { key: keyof Booking; header: string; aliases?: string[] }[] = [
   { key: "bookingId", header: "Booking ID" },
   { key: "sellerName", header: "Seller name" },
   { key: "originCity", header: "Origin city" },
@@ -43,7 +43,7 @@ const BOOKING_COLUMNS: { key: keyof Booking; header: string; aliases?: string[] 
   { key: "deliveryAppointmentBooked", header: "Delivery appointment booked", aliases: ["delivery appointment"] },
 ];
 
-const ITEM_COLUMNS: { key: keyof Item | "bookingId"; header: string; aliases?: string[] }[] = [
+export const ITEM_COLUMNS: { key: keyof Item | "bookingId"; header: string; aliases?: string[] }[] = [
   { key: "bookingId", header: "Booking ID" },
   { key: "sku", header: "SKU" },
   { key: "description", header: "Description" },
