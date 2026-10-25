@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { applyChange, ChangeError, clearKeptFor } from "@/lib/changes";
 import { buildView } from "@/lib/view";
-import { getBooking, logCorrections, saveBooking, sessionId } from "@/lib/server/db";
+import { getBooking, logCorrections, saveBooking } from "@/lib/server/db";
 import { bookingPayload } from "@/lib/server/payload";
 
 // Error Detective actions: accept a suggested fix, enter a value, keep the original with a reason, confirm.
@@ -15,8 +15,7 @@ const Body = z.discriminatedUnion("type", [
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const sid = await sessionId();
-  const row = await getBooking(sid, id);
+  const row = await getBooking(id);
   if (!row) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid request." }, { status: 400 });
@@ -54,5 +53,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   // Any edit after confirmation means the seller has to confirm again.
   if (a.type !== "confirm" && booking.sellerConfirmedAt) booking = { ...booking, sellerConfirmedAt: null };
   const view = await saveBooking(id, booking, items);
-  return NextResponse.json(await bookingPayload((await getBooking(sid, id))!, view));
+  return NextResponse.json(await bookingPayload((await getBooking(id))!, view));
 }

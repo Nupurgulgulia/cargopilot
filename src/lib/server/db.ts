@@ -50,9 +50,10 @@ export async function createBooking(
   return { id: rows[0].id as string, view };
 }
 
-export async function getBooking(sid: string, id: string): Promise<BookingRow | null> {
+/** Bookings are opened by their unguessable id, so result links can be shared (no login). */
+export async function getBooking(id: string): Promise<BookingRow | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const rows = await sql`SELECT * FROM bookings WHERE id = ${id} AND session_id = ${sid}`;
+  const rows = await sql`SELECT * FROM bookings WHERE id = ${id}`;
   return (rows[0] as BookingRow) ?? null;
 }
 

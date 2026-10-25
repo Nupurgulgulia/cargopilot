@@ -4,7 +4,7 @@ import { carrierLabel } from "@/lib/carriers";
 import { isoToDisplay } from "@/lib/format";
 import type { BookingView } from "@/lib/types";
 import { buildView } from "@/lib/view";
-import { getBooking, sessionId, sql, type BookingRow } from "@/lib/server/db";
+import { getBooking, sql, type BookingRow } from "@/lib/server/db";
 
 const READINESS = { grounded: "Grounded — dispatch blocked", attention: "Needs attention", cleared: "Cleared for dispatch review" };
 const STATUS = { pass: "Passed", fail: "Failed", review: "Needs confirmation", not_evaluable: "Not checked — data missing" };
@@ -52,17 +52,16 @@ function summaryRow(view: BookingView) {
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const sid = await sessionId();
   let rows: BookingRow[] = [];
   let name = "cargopilot-report";
   const bookingId = url.searchParams.get("booking");
   const uploadId = url.searchParams.get("upload");
   if (bookingId) {
-    const r = await getBooking(sid, bookingId);
+    const r = await getBooking(bookingId);
     if (r) rows = [r];
     name = `cargopilot-${r?.booking.bookingId ?? "booking"}`;
   } else if (uploadId && /^[0-9a-f-]{36}$/i.test(uploadId)) {
-    rows = (await sql`SELECT * FROM bookings WHERE upload_id = ${uploadId} AND session_id = ${sid} ORDER BY (booking->>'sourceRow')::int NULLS LAST`) as BookingRow[];
+    rows = (await sql`SELECT * FROM bookings WHERE upload_id = ${uploadId} ORDER BY (booking->>'sourceRow')::int NULLS LAST`) as BookingRow[];
     name = "cargopilot-audit";
   }
   if (rows.length === 0) return NextResponse.json({ error: "Nothing to report." }, { status: 404 });

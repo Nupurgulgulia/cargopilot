@@ -15,11 +15,11 @@ export async function POST(req: Request) {
   const { message } = parsed.data;
 
   let id = parsed.data.bookingId;
-  let row = id ? await getBooking(sid, id) : null;
+  let row = id ? await getBooking(id) : null;
   if (id && !row) return NextResponse.json({ error: "Booking not found." }, { status: 404 });
   if (!row) {
     id = (await createBooking(sid, "chat", emptyBooking(), [])).id;
-    row = (await getBooking(sid, id))!;
+    row = (await getBooking(id))!;
   }
 
   const past = await messages(id!);
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   );
   await addMessage(id!, "assistant", turn.reply);
 
-  const fresh = (await getBooking(sid, id!))!;
+  const fresh = (await getBooking(id!))!;
   return NextResponse.json({
     ...(await bookingPayload(fresh, view)),
     reply: turn.reply,

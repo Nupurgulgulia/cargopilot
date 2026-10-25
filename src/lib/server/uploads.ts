@@ -50,9 +50,10 @@ export function summarise(row: Pick<BookingRow, "id" | "booking" | "items">): Up
   };
 }
 
-export async function loadUpload(sid: string, id: string) {
+/** Audits are opened by their unguessable id, so result links can be shared. */
+export async function loadUpload(id: string) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
-  const up = await sql`SELECT * FROM uploads WHERE id = ${id} AND session_id = ${sid}`;
+  const up = await sql`SELECT * FROM uploads WHERE id = ${id}`;
   if (!up[0]) return null;
   const rows = (await sql`SELECT id, booking, items FROM bookings WHERE upload_id = ${id} ORDER BY (booking->>'sourceRow')::int NULLS LAST, created_at`) as BookingRow[];
   const bookings = rows.map((r) => {
