@@ -45,26 +45,29 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Upload a workbook to audit</h1>
-      <p className="mt-1 text-sm text-slate-600">
-        Upload the <b>Bookings</b> and <b>Items</b> sheets in the Case 2 template format. Every booking and item row is checked against the 10-rule
-        rulebook, and each booking gets a carrier recommendation. Your file is read, never changed.
+    <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="eyebrow">Workbook audit</div>
+      <h1 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-slate-900">Audit every booking in one upload</h1>
+      <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-600">
+        Drop in your <b>Bookings</b> and <b>Items</b> sheets. Every booking and item line is checked against all ten pre-flight rules, and each
+        booking gets a carrier recommendation. Your original file is never altered.
       </p>
 
       <label
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
         onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handle(f); }}
-        className={`mt-6 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-12 text-center transition ${drag ? "border-teal-600 bg-teal-50" : "border-slate-300 bg-white hover:border-teal-500"}`}
+        className={`mt-8 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-14 text-center shadow-sm transition ${drag ? "border-teal-600 bg-teal-50/60" : "border-slate-200 bg-white hover:border-teal-500 hover:bg-teal-50/20"}`}
       >
-        <Upload className="h-10 w-10 text-teal-700" />
+        <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 ring-8 ring-teal-50/50">
+          <Upload className="h-6 w-6 text-teal-700" />
+        </span>
         {busy ? (
-          <div className="text-sm font-medium text-slate-700">Reading the workbook and running all checks…</div>
+          <div className="text-sm font-medium text-slate-700">Reading your workbook and running every check…</div>
         ) : (
           <>
-            <div className="text-base font-medium text-slate-900">Drop your .xlsx here, or click to choose</div>
-            <div className="text-xs text-slate-500">Sheets needed: Bookings, Items · dates as DD-MM-YYYY · GBP</div>
+            <div className="text-base font-medium text-slate-900">Drop your workbook here, or browse</div>
+            <div className="text-xs text-slate-500">.xlsx in the Case 2 format · Bookings and Items sheets · dates as DD-MM-YYYY · GBP</div>
           </>
         )}
         <input type="file" accept=".xlsx,.xlsm,.xls" className="hidden" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) handle(f); e.target.value = ""; }} />
@@ -72,18 +75,18 @@ export default function UploadPage() {
       {error && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 
       <div className="mt-8 grid gap-3 sm:grid-cols-2">
-        <a href="/samples/cargopilot-sample-audit.xlsx" className="card flex items-start gap-3 p-4 hover:border-teal-500">
+        <a href="/samples/cargopilot-sample-audit.xlsx" className="card flex items-start gap-3 p-4 transition hover:border-teal-400 hover:shadow-md">
           <Download className="mt-0.5 h-5 w-5 text-teal-700" />
           <div>
-            <div className="text-sm font-semibold text-slate-900">Sample workbook with planted errors</div>
-            <div className="text-xs text-slate-600">8 bookings that break different rules — download it, then upload it here.</div>
+            <div className="text-sm font-semibold text-slate-900">Try the sample workbook</div>
+            <div className="text-xs text-slate-600">Eight bookings with deliberate mistakes. Download it, then drop it above.</div>
           </div>
         </a>
-        <a href="/samples/Case2_Shipment_Booking_Test_Data_Format.xlsx" className="card flex items-start gap-3 p-4 hover:border-teal-500">
+        <a href="/samples/Case2_Shipment_Booking_Test_Data_Format.xlsx" className="card flex items-start gap-3 p-4 transition hover:border-teal-400 hover:shadow-md">
           <Download className="mt-0.5 h-5 w-5 text-teal-700" />
           <div>
-            <div className="text-sm font-semibold text-slate-900">Blank Case 2 template</div>
-            <div className="text-xs text-slate-600">The original format, with the grey example row (skipped automatically when you add your own rows).</div>
+            <div className="text-sm font-semibold text-slate-900">Blank template</div>
+            <div className="text-xs text-slate-600">The Case 2 format, ready for your own bookings. The grey example row is skipped automatically.</div>
           </div>
         </a>
       </div>

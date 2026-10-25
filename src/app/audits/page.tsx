@@ -20,8 +20,9 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
     <div className="mx-auto max-w-5xl space-y-5 px-4 py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Audits</h1>
-          <p className="text-sm text-slate-600">Your uploaded workbooks, and the rules and choices behind every result.</p>
+          <div className="eyebrow">Audits</div>
+          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">Recent audits</h1>
+          <p className="mt-1 text-[15px] text-slate-600">Every workbook you          <p className="text-sm text-slate-600">Your uploaded workbooks, and the rules and choices behind every result.</p>apos;ve audited, and exactly how each result was reached.</p>
         </div>
         <Link href="/upload" className="btn-primary"><Upload className="h-4 w-4" /> Upload workbook</Link>
       </div>

@@ -32,10 +32,10 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
   const open = view.results.filter((r) => r.status !== "pass");
   const groups: { title: string; hint: string; items: RuleResult[] }[] = [
-    { title: "Blocking dispatch", hint: "Red — the shipment must not go until these are fixed", items: open.filter((r) => r.status === "fail" && r.severity === "Red") },
-    { title: "Please confirm", hint: "Restricted-goods screening needs your answer", items: open.filter((r) => r.status === "review") },
-    { title: "Warnings", hint: "Amber — risky; fix them or record why they're fine", items: open.filter((r) => r.status === "fail" && r.severity === "Amber") },
-    { title: "Waiting for information", hint: "These checks run as soon as the data is there", items: open.filter((r) => r.status === "not_evaluable") },
+    { title: "Blocking dispatch", hint: "Critical (Red) — the shipment can't leave until these are fixed", items: open.filter((r) => r.status === "fail" && r.severity === "Red") },
+    { title: "Needs your confirmation", hint: "A quick yes or no on restricted goods", items: open.filter((r) => r.status === "review") },
+    { title: "Warnings", hint: "Amber — fix them, or note why they're fine", items: open.filter((r) => r.status === "fail" && r.severity === "Amber") },
+    { title: "Waiting on details", hint: "These checks run the moment the data arrives", items: open.filter((r) => r.status === "not_evaluable") },
   ];
   const passed = view.results.filter((r) => r.status === "pass");
 
@@ -45,13 +45,13 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
       <section className={`card overflow-hidden border-l-4 ${view.readiness === "grounded" ? "border-l-red-600" : view.readiness === "attention" ? "border-l-amber-500" : "border-l-emerald-600"}`}>
         <div className="flex flex-wrap items-start justify-between gap-3 p-4">
           <div>
-            <div className="label-xs">Shipment Flight Deck · {b.bookingId ?? "new booking"}</div>
-            <div className="mt-1 flex items-center gap-2">
-              <span className={`inline-flex h-9 w-9 items-center justify-center rounded-full ${meta.cls}`}>
+            <div className="label-xs">Flight Deck · {b.bookingId ?? "New booking"}</div>
+            <div className="mt-2 flex items-center gap-3">
+              <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${meta.cls}`}>
                 <ReadinessIcon r={view.readiness} />
               </span>
               <div>
-                <div className="text-xl font-semibold tracking-tight text-slate-900">{meta.label}</div>
+                <div className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">{meta.label}</div>
                 <div className="text-sm text-slate-600">{meta.sub}</div>
               </div>
             </div>
@@ -62,7 +62,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
             </a>
           )}
         </div>
-        <div className="border-t border-slate-100 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-800">{view.summary.headline}</div>
+        <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-sm font-medium tabular-nums text-slate-700">{view.summary.headline}</div>
         <div className="grid grid-cols-5 gap-px border-t border-slate-100 bg-slate-100 sm:grid-cols-10">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
@@ -79,7 +79,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
       {view.missing.length > 0 && !compact && (
         <section className="card p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Missing information ({view.missing.length})</h3>
+          <h3 className="text-sm font-semibold text-slate-900">Still needed ({view.missing.length})</h3>
           <ul className="mt-2 grid gap-1 text-sm text-slate-700 sm:grid-cols-2">
             {view.missing.map((m) => (
               <li key={m.path} className="flex items-center gap-2"><span className="h-1.5 w-1.5 rounded-full bg-slate-400" />{m.label}</li>
@@ -90,8 +90,8 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
       {view.dataIssues.length > 0 && (
         <section className="card border-slate-300 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">Data problems in the booking</h3>
-          <p className="text-xs text-slate-500">Separate from the 10 rules — values that couldn&apos;t be read or don&apos;t make sense.</p>
+          <h3 className="text-sm font-semibold text-slate-900">Data quality</h3>
+          <p className="text-xs text-slate-500">Separate from the ten rules: values that couldn&apos;t be read or don&apos;t add up.</p>
           <ul className="mt-2 space-y-1 text-sm">
             {view.dataIssues.map((d, i) => (
               <li key={i} className={d.level === "error" ? "text-red-800" : "text-amber-900"}>• {d.message}</li>
@@ -114,7 +114,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
       {passed.length > 0 && (
         <details className="card group p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-900">Passed checks ({passed.length}) — see the working</summary>
+          <summary className="cursor-pointer text-sm font-semibold text-slate-900">Passed checks ({passed.length}) · show the working</summary>
           <ul className="mt-3 space-y-2">
             {passed.map((r) => (
               <li key={r.key} className="flex gap-2 text-sm">
@@ -135,8 +135,8 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
       {data.history.length > 0 && (
         <details className="card p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-slate-900">Change history ({data.history.length})</summary>
-          <p className="mt-1 text-xs text-slate-500">Nothing is overwritten silently: every change keeps its original value.</p>
+          <summary className="cursor-pointer text-sm font-semibold text-slate-900">Audit trail ({data.history.length})</summary>
+          <p className="mt-1 text-xs text-slate-500">Every change is recorded with its original value — nothing is overwritten silently.</p>
           <ul className="mt-2 space-y-1.5 text-sm">
             {data.history.map((h) => (
               <li key={h.id} className="text-slate-700">
@@ -242,7 +242,7 @@ function IssueCard({ r, run, compact }: { r: RuleResult; run: RunAction; compact
                 </div>
               ) : (
                 <button className="text-xs font-medium text-slate-600 underline-offset-2 hover:underline" onClick={() => setKeeping(true)}>
-                  Keep my value and explain why
+                  Keep my value and add a note
                 </button>
               )
             )}

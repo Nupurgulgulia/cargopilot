@@ -4,19 +4,19 @@ import { Check, Dots, Plane, Question, Stop, Warn } from "./icons";
 export const READINESS_META: Record<Readiness, { label: string; sub: string; cls: string; dot: string }> = {
   grounded: {
     label: "Grounded",
-    sub: "Blocked by Red issues — must not ship until fixed",
+    sub: "Critical issues found — fix them before this ships",
     cls: "bg-red-50 text-red-800 border-red-200",
     dot: "bg-red-600",
   },
   attention: {
     label: "Needs Attention",
-    sub: "Warnings, confirmations or missing details to review",
+    sub: "A few items need your review before dispatch",
     cls: "bg-amber-50 text-amber-900 border-amber-200",
     dot: "bg-amber-500",
   },
   cleared: {
     label: "Cleared for Dispatch",
-    sub: "No rulebook issues detected — ready for seller review",
+    sub: "Passes every rulebook check — ready for your final review",
     cls: "bg-emerald-50 text-emerald-800 border-emerald-200",
     dot: "bg-emerald-600",
   },

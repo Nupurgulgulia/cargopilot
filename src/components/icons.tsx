@@ -19,3 +19,5 @@ export const Download = ({ className }: P) => (<svg {...base} className={classNa
 export const Calc = ({ className }: P) => (<svg {...base} className={className}><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M8 7h8M8 12h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01M16 16h.01" /></svg>);
 export const Send = ({ className }: P) => (<svg {...base} className={className}><path d="M5 12h14M13 6l6 6-6 6" /></svg>);
 export const Plane = ({ className }: P) => (<svg {...base} className={className}><path d="M2 16l20-8-6 13-3-5-5 3 .5-5L2 16Z" /></svg>);
+export const External = ({ className }: P) => (<svg {...base} className={className}><path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5" /></svg>);
+export const Info = ({ className }: P) => (<svg {...base} className={className}><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></svg>);

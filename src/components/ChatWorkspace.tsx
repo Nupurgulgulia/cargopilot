@@ -11,7 +11,7 @@ import { useBooking } from "./useBooking";
 type Msg = { role: "user" | "assistant"; content: string; changes?: string[] };
 
 const GREETING =
-  "Hi, I'm CargoPilot. Tell me about your shipment in your own words — where it's going, what's in it, how many pallets — and I'll ask only for what's missing, then check it against the rulebook and pick a carrier.";
+  "Hello — I'm your shipment co-pilot. Tell me what you're sending, where it's going and how many pallets, in your own words. I'll ask only for what's missing, run all ten pre-flight checks and recommend a carrier.";
 
 const SAMPLES = [
   "Hi, I need to ship 1,000 ceramic mugs from Manchester to our warehouse in Frankfurt. 3 pallets, cheapest option please.",
@@ -67,8 +67,8 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
       <section className="card flex h-[calc(100vh-7rem)] min-h-[480px] flex-col lg:sticky lg:top-[4.5rem]">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <div>
-            <h1 className="font-semibold text-slate-900">New shipment</h1>
-            <p className="text-xs text-slate-500">Describe it like you would to a colleague. Change anything at any time.</p>
+            <h1 className="text-[15px] font-semibold tracking-tight text-slate-900">New shipment</h1>
+            <p className="text-xs text-slate-500">Plain English is fine. Change any detail at any time — checks re-run instantly.</p>
           </div>
           {data && <ReadinessBadge r={data.view.readiness} />}
         </div>
@@ -76,7 +76,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
           <Bubble m={{ role: "assistant", content: GREETING }} />
           {msgs.length === 0 && (
             <div className="space-y-2 pl-9">
-              <div className="label-xs">Try one</div>
+              <div className="label-xs">Or start from an example</div>
               {SAMPLES.map((s) => (
                 <button key={s} onClick={() => send(s)} className="block w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700 hover:border-teal-500 hover:bg-teal-50/40">
                   {s}
@@ -89,7 +89,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
             <div className="flex items-center gap-2 pl-1 text-sm text-slate-500">
               <Logo className="h-6 w-6 text-teal-600" />
               <span className="typing flex gap-1"><span>●</span><span>●</span><span>●</span></span>
-              <span className="text-xs">reading your message and re-running checks…</span>
+              <span className="text-xs">Reading your message and re-running the checks…</span>
             </div>
           )}
           <div ref={endRef} />
@@ -134,9 +134,9 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
         ) : (
           <div className="card flex h-full min-h-80 flex-col items-center justify-center gap-2 p-8 text-center">
             <Logo className="h-10 w-10 text-teal-600" />
-            <h2 className="font-semibold text-slate-900">Your booking builds here as you talk</h2>
+            <h2 className="text-base font-semibold tracking-tight text-slate-900">Your booking takes shape here</h2>
             <p className="max-w-md text-sm text-slate-600">
-              Every detail you give fills a field. As soon as there&apos;s enough data, all 10 pre-flight checks run and the Carrier Matchmaker ranks carriers for your priority.
+              Each detail you share fills in a field. Once there&apos;s enough to go on, all ten pre-flight checks run live and the Carrier Matchmaker ranks options for your priority.
             </p>
           </div>
         )}

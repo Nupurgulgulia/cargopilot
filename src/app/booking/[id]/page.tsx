@@ -4,6 +4,7 @@ import { getBooking } from "@/lib/server/db";
 import { bookingPayload } from "@/lib/server/payload";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Flight Deck · CargoPilot" };
 
 export default async function BookingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

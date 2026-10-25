@@ -7,7 +7,7 @@ import type { loadUpload } from "@/lib/server/uploads";
 import type { Readiness } from "@/lib/types";
 import { Download } from "./icons";
 import { READINESS_META, ReadinessBadge } from "./status";
-import { WorkbookSync } from "./WorkbookSync";
+import { SheetSyncBar } from "./WorkbookSync";
 
 type Data = NonNullable<Awaited<ReturnType<typeof loadUpload>>>;
 type Filter = "all" | Readiness;
@@ -30,13 +30,20 @@ export function AuditResults({ data }: { data: Data }) {
     <div className="mx-auto max-w-7xl space-y-5 px-4 py-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <div className="text-xs text-slate-500">Batch audit · {new Date(data.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">{data.fileName}</h1>
+          <div className="eyebrow">Workbook audit · <span className="font-medium normal-case tracking-normal text-slate-500">{new Date(data.createdAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}</span></div>
+          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">{data.fileName}</h1>
         </div>
-        <a href={`/api/report?upload=${data.id}`} className="btn-ghost"><Download className="h-4 w-4" /> Download audit report (.xlsx)</a>
+        <div className="flex flex-wrap items-center gap-2">
+          <a href={`/api/report?upload=${data.id}`} className="btn-ghost" title="Summary of every issue and carrier recommendation, as a spreadsheet">
+            <Download className="h-4 w-4" /> Audit report
+          </a>
+          <a href={`/api/uploads/${data.id}/workbook`} className="btn-primary" title="Your original sheets untouched, plus CargoPilot Changes (grouped by Booking ID) and corrected Bookings & Items with changes highlighted">
+            <Download className="h-4 w-4" /> Updated workbook
+          </a>
+        </div>
       </div>
 
-      <WorkbookSync uploadId={data.id} google={data.google} />
+      <SheetSyncBar uploadId={data.id} google={data.google} />
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Bookings checked" value={data.bookings.length} />

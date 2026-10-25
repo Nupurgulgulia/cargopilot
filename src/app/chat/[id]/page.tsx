@@ -4,6 +4,7 @@ import { getBooking } from "@/lib/server/db";
 import { bookingPayload } from "@/lib/server/payload";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "New shipment · CargoPilot" };
 
 export default async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

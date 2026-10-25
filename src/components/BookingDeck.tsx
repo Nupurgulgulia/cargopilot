@@ -16,16 +16,16 @@ export function BookingDeck({ initial }: { initial: BookingPayload }) {
         <div>
           <div className="text-xs text-slate-500">
             {data.source === "upload" ? (
-              <>From workbook upload{b.sourceRow ? ` · Bookings row ${b.sourceRow}` : ""} · <Link className="text-teal-700 hover:underline" href={`/audit/${data.uploadId}`}>back to audit</Link></>
+              <><Link className="font-medium text-teal-700 hover:underline" href={`/audit/${data.uploadId}`}>← Back to audit</Link> · Workbook{b.sourceRow ? `, Bookings row ${b.sourceRow}` : ""}</>
             ) : (
-              <>From chat · <Link className="text-teal-700 hover:underline" href={`/chat/${data.id}`}>continue the conversation</Link></>
+              <>Started in chat · <Link className="font-medium text-teal-700 hover:underline" href={`/chat/${data.id}`}>Continue the conversation →</Link></>
             )}
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">
+          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">
             {b.bookingId} {b.sellerName && <span className="font-normal text-slate-500">· {b.sellerName}</span>}
           </h1>
-          <p className="text-sm text-slate-600">
-            {b.originCity ?? "?"} → {b.destinationCity ?? "?"}{b.destinationCountry ? `, ${b.destinationCountry}` : ""} · ready {isoToDisplay(b.readyToShipDate)} · priority {b.sellerPriority ?? "—"}
+          <p className="mt-1 text-[15px] text-slate-600">
+            {b.originCity ?? "?"} → {b.destinationCity ?? "?"}{b.destinationCountry ? `, ${b.destinationCountry}` : ""} · Ready {isoToDisplay(b.readyToShipDate)} · Priority: {b.sellerPriority ?? "not set"}
           </p>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function BookingDeck({ initial }: { initial: BookingPayload }) {
 function OriginalNote() {
   return (
     <p className="text-xs text-slate-500">
-      Corrections here are saved in CargoPilot with their original values (see Change history). Your uploaded workbook is never modified.
+      Every correction is saved with its original value (see Audit trail below). Your uploaded workbook is never modified.
     </p>
   );
 }
