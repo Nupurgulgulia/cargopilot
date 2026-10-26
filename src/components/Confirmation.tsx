@@ -4,6 +4,7 @@ import { carrierLabel } from "@/lib/carriers";
 import { addDaysISO, gbp0, isoToDisplay, kg, num } from "@/lib/format";
 import type { BookingPayload } from "@/lib/server/payload";
 import type { RunAction } from "./FlightDeck";
+import { CarrierEmailPanel } from "./CarrierEmailPanel";
 import { Check } from "./icons";
 
 export function Confirmation({ data, run }: { data: BookingPayload; run: RunAction }) {
@@ -103,6 +104,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
           </span>
         </div>
       )}
+      {confirmedAt && <CarrierEmailPanel data={data} run={run} />}
       {err && <p className="mt-2 text-xs text-red-700">{err}</p>}
     </section>
   );

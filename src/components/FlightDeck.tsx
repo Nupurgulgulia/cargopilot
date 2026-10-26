@@ -13,7 +13,8 @@ export type Action =
   | { type: "apply"; path: string; value: unknown; ruleId?: string; suggested?: boolean }
   | { type: "keep"; key: string; ruleId: string; reason: string }
   | { type: "unkeep"; key: string; ruleId: string }
-  | { type: "confirm" };
+  | { type: "confirm" }
+  | { type: "email"; to: string; replyTo: string; note?: string };
 
 export type RunAction = (a: Action) => Promise<string | null>;
 

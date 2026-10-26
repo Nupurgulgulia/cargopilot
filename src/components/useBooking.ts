@@ -8,10 +8,12 @@ export function useBooking(initial: BookingPayload | null) {
   const run = useCallback(
     async (a: Action): Promise<string | null> => {
       if (!data) return "No booking yet.";
-      const res = await fetch(`/api/bookings/${data.id}/actions`, {
+      // Emailing the carrier has its own endpoint; every other action goes through /actions.
+      const { type, ...rest } = a;
+      const res = await fetch(`/api/bookings/${data.id}/${type === "email" ? "email" : "actions"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(a),
+        body: JSON.stringify(type === "email" ? rest : a),
       });
       const json = await res.json().catch(() => ({ error: "Something went wrong." }));
       if (!res.ok) return json.error ?? "Something went wrong.";

@@ -141,7 +141,7 @@ function buildNextSteps(
   if (b.destinationType === "Warehouse" && !b.deliveryAppointmentBooked)
     steps.push(`Book a delivery slot with the receiving warehouse in ${b.destinationCity ?? "the destination"}.`);
   if (carrier) {
-    steps.push(`Confirm ${carrierLabel(carrier.carrier)} with the carrier${carrier.totalCost != null ? ` (estimated ${gbp0(carrier.totalCost)})` : ""}. CargoPilot has prepared the booking but has not contacted the carrier.`);
+    steps.push(`Send the booking to ${carrierLabel(carrier.carrier)}${carrier.totalCost != null ? ` (estimated ${gbp0(carrier.totalCost)})` : ""} and wait for them to confirm the collection slot. CargoPilot doesn't book the carrier for you.`);
   }
   const hs = items.filter((it) => it.hsCode).length;
   if (items.length) steps.push(`Prepare the commercial invoice: ${plural(items.length, "line")}, ${hs === items.length ? "HS codes included" : `${items.length - hs} HS code(s) still needed`}, declared value ${b.declaredValue != null ? gbp0(b.declaredValue) : "not set yet"}.`);
