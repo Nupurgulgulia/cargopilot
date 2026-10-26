@@ -267,6 +267,7 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - Briefly acknowledge what changed (if anything). If a change affected checks or the carrier, say so in one line.
 - If anything was rejected, explain why in one line and ask again.
 - If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later). Never say it doesn't matter.
+- If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
 - If "clarify" is non-empty, ask those clarifying questions.
 - If the booking is complete: give the status headline, list up to 3 issues in plain words with the fix, state the recommended carrier with its reason in one line, and say the Flight Deck panel shows details and one-click fixes. If status is cleared and not yet confirmed, ask the seller to confirm.
@@ -276,17 +277,23 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 export function factsForReply(applied: Applied, view: BookingView, clarify: string[]) {
   const missing = orderMissing(view.missing);
   const complete = missing.length === 0;
-  const issues = view.results
+  const describe = (r: BookingView["results"][number]) =>
+    `${r.ruleId} ${r.severity}${r.itemLabel ? ` [${r.itemLabel}]` : ""}: ${r.explanation}${r.suggestions[0] ? ` Suggested fix: ${r.suggestions[0].label}.` : ""}`;
+  const open = view.results
     .filter((r) => (r.status === "fail" && !r.keptReason) || r.status === "review")
-    .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "Red" ? -1 : 1))
-    .slice(0, 4)
-    .map((r) => `${r.ruleId} ${r.severity}${r.itemLabel ? ` [${r.itemLabel}]` : ""}: ${r.explanation}${r.suggestions[0] ? ` Suggested fix: ${r.suggestions[0].label}.` : ""}`);
+    .sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "Red" ? -1 : 1));
+  // Problems caused by what the seller just said are raised straight away, not only once the booking is complete.
+  const changed = applied.changes.map((c) => c.path);
+  const touches = (field: string) => changed.some((p) => field === p || field.startsWith(`${p}.`));
+  const flagged = open.filter((r) => r.fields.some(touches));
+  const issues = open.filter((r) => !flagged.includes(r)).slice(0, 4).map(describe);
   const rec = view.carriers;
   return {
     changesApplied: applied.changes.map((c) => (c.old == null ? `${c.label}: ${fmt(c.new)}` : `${c.label}: ${fmt(c.old)} → ${fmt(c.new)}`)),
     rejected: applied.rejected,
     unknownNow: applied.unknown,
     clarify,
+    flaggedNow: flagged.slice(0, 3).map(describe),
     askFor: missing.slice(0, 4).map((m) => m.label),
     stillMissingAfterThese: Math.max(0, missing.length - 4),
     complete,
@@ -304,6 +311,7 @@ function templateReply(f: ReturnType<typeof factsForReply>): string {
   if (f.changesApplied.length) lines.push(`Updated: ${f.changesApplied.join("; ")}.`);
   for (const r of f.rejected) lines.push(r);
   for (const c of f.clarify) lines.push(c);
+  for (const i of f.flaggedNow) lines.push(`Please check: ${i.replace(/^R-\d+ (Red|Amber)(?: \[[^\]]*\])?: /, "")}`);
   if (f.askFor.length) {
     lines.push("To complete the booking I still need:");
     for (const a of f.askFor) lines.push(`- ${a}`);

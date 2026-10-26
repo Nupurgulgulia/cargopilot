@@ -311,10 +311,27 @@ function r10(b: Booking, today: string): RuleResult {
   if (d >= 0) {
     return make("R-10", "pass", d === 0 ? "Ready to ship today." : `Ready in ${plural(d, "day")}.`, { fields, calculation });
   }
-  return make("R-10", "fail", `Ready-to-ship date ${isoToDisplay(b.readyToShipDate)} is ${plural(-d, "day")} in the past, so a carrier can't collect on it.`, {
+  // Usually a wrong year: offer the same day and month in the next year that is still ahead.
+  const likely = nextFutureAnniversary(b.readyToShipDate, today);
+  const suggestions: Suggestion[] = [];
+  if (likely) suggestions.push({ kind: "set", path: "booking.readyToShipDate", value: likely, label: `Change to ${isoToDisplay(likely)}` });
+  suggestions.push({ kind: "input", path: "booking.readyToShipDate", label: "Choose a new ready-to-ship date", inputType: "date" });
+  return make("R-10", "fail", `Ready-to-ship date ${isoToDisplay(b.readyToShipDate)} is ${plural(-d, "day")} in the past, so a carrier can't collect on it.${likely ? ` Did you mean ${isoToDisplay(likely)}?` : ""}`, {
     fields, calculation, observed: isoToDisplay(b.readyToShipDate), expected: `${isoToDisplay(today)} or later`,
-    suggestions: [{ kind: "input", path: "booking.readyToShipDate", label: "Choose a new ready-to-ship date", inputType: "date" }],
+    suggestions,
   });
+}
+
+/** Same day and month in the first later year that isn't in the past (skips dates like 29 Feb that don't exist). */
+export function nextFutureAnniversary(iso: string, today: string): string | null {
+  const [y, m, d] = iso.split("-").map(Number);
+  for (let year = y + 1; year <= y + 3; year++) {
+    const dt = new Date(Date.UTC(year, m - 1, d));
+    if (dt.getUTCMonth() !== m - 1) continue;
+    const candidate = dt.toISOString().slice(0, 10);
+    if (candidate >= today) return candidate;
+  }
+  return null;
 }
 
 export function runRules(b: Booking, items: Item[], rec: CarrierRecommendation, today: string): RuleResult[] {

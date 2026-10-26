@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { applyExtraction, emptyBooking, Extraction, mergeExtractions, missingNumbers } from "@/lib/server/chat";
+import { applyExtraction, emptyBooking, Extraction, factsForReply, mergeExtractions, missingNumbers } from "@/lib/server/chat";
+import { nextFutureAnniversary } from "@/lib/rules";
+import { buildView } from "@/lib/view";
+
+describe("past ready-to-ship date", () => {
+  it("suggests the same day in the next year that is still ahead", () => {
+    expect(nextFutureAnniversary("2025-10-22", "2026-10-26")).toBe("2027-10-22");
+    expect(nextFutureAnniversary("2025-11-05", "2026-10-26")).toBe("2026-11-05");
+    // 29 Feb doesn't exist in 2025–2027, so no guess is offered (the date picker is still there).
+    expect(nextFutureAnniversary("2024-02-29", "2026-01-10")).toBeNull();
+  });
+
+  it("is flagged in the same chat reply, with a one-click fix", () => {
+    const applied = applyExtraction(emptyBooking(), [], { booking: { readyToShipDate: "05-11-2025" } });
+    const view = buildView(applied.booking, applied.items, new Date("2026-10-26T09:00:00Z"));
+    const facts = factsForReply(applied, view, []);
+    expect(facts.flaggedNow).toHaveLength(1);
+    expect(facts.flaggedNow[0]).toContain("R-10 Amber");
+    expect(facts.flaggedNow[0]).toContain("Did you mean 05-11-2026?");
+    expect(view.results.find((r) => r.ruleId === "R-10")!.suggestions[0]).toMatchObject({ value: "2026-11-05" });
+  });
+});
 
 describe("extraction safety net", () => {
   const msg = "2 pallets, 700 kg gross, declared value £6,000, ready 20-11-2026. 1,200 bottles at £5, HS 732393, 0.45 kg each, 10000mAh";
