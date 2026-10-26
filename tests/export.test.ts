@@ -77,3 +77,20 @@ describe("Google Sheet links", () => {
     expect(parseSheetId("https://example.com/not-a-sheet")).toBeNull();
   });
 });
+
+describe("address changes in the change log", () => {
+  it("writes the address and contact as text, not [object Object]", () => {
+    const { bookings, events } = setup();
+    const i = bookings.findIndex((b) => b.booking.bookingId === "SA-02");
+    const address = { company: "Potter & Co Warehouse", street: "14 Ancoats Lane", postcode: "M4 6BB", contactName: "Sam Patel", phone: "+44 161 496 0123", email: "dispatch@potterandco.example", notes: null };
+    const r = applyChange(bookings[i].booking, bookings[i].items, "collection", address);
+    bookings[i] = { ...bookings[i], booking: r.booking, items: r.items };
+    events.push({ bookingIndex: i, path: "collection", oldValue: r.oldValue, newValue: r.newValue, action: "manual_edit", ruleId: null, at: NOW.toISOString() });
+
+    const [changes] = buildExport(bookings, events, NOW);
+    const row = changes.rows.find((x) => x[0] === "SA-02" && x[4] === "Collection address and contact");
+    expect(row).toBeTruthy();
+    expect(String(row![6])).toBe("Potter & Co Warehouse, 14 Ancoats Lane, M4 6BB Manchester · Sam Patel · +44 161 496 0123 · dispatch@potterandco.example");
+    expect(changes.rows.flat().some((c) => String(c).includes("[object Object]"))).toBe(false);
+  });
+});

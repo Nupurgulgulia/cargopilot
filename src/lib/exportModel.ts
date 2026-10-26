@@ -1,9 +1,10 @@
 // Builds the sheets that describe what changed in CargoPilot, grouped by Booking ID.
 // Pure data so the Excel download and the Google Sheets sync render exactly the same thing.
+import { addressLine, contactLine } from "./addresses";
 import { CARRIERS } from "./constants";
 import { carrierLabel } from "./carriers";
 import { isoToDisplay } from "./format";
-import type { Booking, Item, Readiness } from "./types";
+import type { Address, Booking, Item, Readiness } from "./types";
 import { buildView } from "./view";
 import { BOOKING_COLUMNS, ITEM_COLUMNS } from "./workbook";
 
@@ -118,6 +119,21 @@ function describeEvent(e: ExportEvent, b: ExportBooking) {
       field: `Restricted-goods answer${it?.sku ? ` (${it.sku})` : ""}`,
       from: word(e.oldValue),
       to: word(e.newValue),
+    };
+  }
+  if (p[0] === "collection" || p[0] === "delivery") {
+    // Addresses are objects: write them the way the Addresses card shows them, not "[object Object]".
+    const city = p[0] === "collection" ? b.booking.originCity : b.booking.destinationCity;
+    const text = (v: unknown) => {
+      const a = v as Address | null;
+      return [addressLine(a, city), contactLine(a)].filter(Boolean).join(" · ");
+    };
+    return {
+      sheet: "CargoPilot",
+      row: "",
+      field: p[0] === "collection" ? "Collection address and contact" : "Delivery address and contact",
+      from: text(e.oldValue),
+      to: text(e.newValue),
     };
   }
   return { sheet: "", row: "", field: e.path, from: cellFor("", e.oldValue), to: cellFor("", e.newValue) };
