@@ -4,8 +4,10 @@ CargoPilot ships with two approved design versions. Both share the same layout, 
 
 | Version | How to see it | Saved at |
 | --- | --- | --- |
-| **Orange ("Skyline")**, the default | the switch in the nav, or `?theme=orange` | branch `design/skyline-orange`, tag `skyline-orange-v1` |
-| **Dusk** (violet dashboard) | the switch in the nav, or `?theme=dusk` | branch `design/dusk-theme` |
+| **Light mode**: Orange "Skyline", the default | the sun on the nav toggle, or `?theme=light` | branch `design/skyline-orange`, tag `skyline-orange-v1` |
+| **Dark mode**: Dusk, the violet dashboard | the moon on the nav toggle, or `?theme=dark` | branch `design/dusk-theme` |
+
+The interface never shows the names "Orange" or "Dusk". Users see a sun / moon toggle, labelled "Light mode" and "Dark mode" for screen readers. Internally the theme keys stay `orange` and `dusk` (`?theme=orange` / `?theme=dusk` also work).
 
 The choice is saved in `localStorage` (`cp-theme`) and applied before first paint (`THEME_BOOT` in `src/lib/theme.ts`). Dusk is defined in `src/app/globals.css` under `[data-theme="dusk"]`. If one version is dropped later, delete its token block and the switch. Keep everything else.
 
