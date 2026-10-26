@@ -5,7 +5,8 @@ import {
 } from "../constants";
 import { applyChange, ChangeError, clearKeptFor } from "../changes";
 import { carrierLabel } from "../carriers";
-import { gbp0, isoToDisplay, num, todayISO } from "../format";
+import { daysBetweenISO, gbp0, isoToDisplay, num, parseDate, todayISO } from "../format";
+import { nextFutureAnniversary } from "../rules";
 import type { Booking, BookingView, Item, MissingField } from "../types";
 import { buildView } from "../view";
 import { gemini } from "./gemini";
@@ -47,6 +48,7 @@ export const EXTRACTION_SCHEMA = {
     },
     chooseCarrier: { type: "string", enum: ["Carrier A", "Carrier B", "Carrier C"] },
     confirmBooking: { type: "boolean" },
+    keepPastDate: { type: "boolean", description: "true only if the seller explicitly says to keep the past ready-to-ship date that is awaiting confirmation" },
     clarify: { type: "array", items: str_ },
   },
 };
@@ -85,6 +87,7 @@ export const Extraction = z.preprocess(dropNulls, z.object({
   unknownFields: z.array(z.string()).optional().catch(undefined),
   hazardAnswers: z.array(z.object({ ref: z.number().int(), answer: z.enum(["none", "contains"]) })).optional().catch(undefined),
   chooseCarrier: s,
+  keepPastDate: bool,
   confirmBooking: bool,
   clarify: z.array(z.string()).optional().catch(undefined),
 }));
@@ -105,6 +108,7 @@ Rules:
 - cartons: item.cartons is cartons of that product. booking.cartons is the shipment's total. If the shipment has (or will have) exactly one product and the seller states a carton count, set both.
 - Items: a product line. For a NEW product, omit "ref". To change an existing product, set "ref" to its number in the state list. countryOfOrigin must be one of: ${ITEM_ORIGIN_COUNTRIES.join(", ")} (where it was made, not where it ships from).
 - readyToShipDate as DD-MM-YYYY; resolve relative dates ("next Monday", "tomorrow") using today's date given in the state.
+- If the state has "pastDateAwaitingConfirmation", the seller was asked about a past date. If they accept the suggested date ("yes", "that's right", "the 2026 one"), return readyToShipDate = the suggested date. If they explicitly want to keep the past date, return readyToShipDate = that past date and keepPastDate: true. If they give a different date, return that date.
 - If the seller says they don't know / don't have a value, list its path in unknownFields, e.g. "booking.grossWeightKg" or "items.1.hsCode" (1-based item number).
 - hazardAnswers: when the seller confirms whether a flagged item contains a lithium battery, aerosol or flammable liquid.
 - chooseCarrier: only if the seller explicitly picks a carrier. confirmBooking: only if the seller explicitly confirms/approves the final booking.
@@ -122,6 +126,14 @@ export function stateForPrompt(b: Booking, items: Item[]) {
       grossWeightKg: b.grossWeightKg, deliveryAppointmentBooked: b.deliveryAppointmentBooked,
     },
     items: items.map((it, i) => ({ number: i + 1, ...it, sourceRow: undefined })),
+    ...(b.pendingReadyDate
+      ? {
+          pastDateAwaitingConfirmation: {
+            date: isoToDisplay(b.pendingReadyDate.value),
+            suggested: b.pendingReadyDate.suggested ? isoToDisplay(b.pendingReadyDate.suggested) : null,
+          },
+        }
+      : {}),
   };
 }
 
@@ -133,6 +145,8 @@ interface Applied {
   changes: { path: string; label: string; old: unknown; new: unknown }[];
   rejected: string[];
   unknown: string[];
+  /** A past date the seller gave that was held back (not saved) until they confirm it. */
+  held: { value: string; suggested: string | null } | null;
 }
 
 const label = (path: string, items: Item[]) => {
@@ -180,8 +194,22 @@ export function applyExtraction(booking: Booking, items: Item[], ex: Extraction)
   };
 
   const bk = ex.booking ?? {};
+  let held: Applied["held"] = null;
+  // A past ready-to-ship date isn't saved straight away: the seller is asked to confirm or correct it first.
+  // Only an explicit "keep it" saves it (and R-10 then flags it, as the rulebook requires).
+  if (bk.readyToShipDate) {
+    const iso = parseDate(bk.readyToShipDate);
+    const confirmingPending = ex.keepPastDate && iso != null && iso === b.pendingReadyDate?.value;
+    if (iso && iso < todayISO() && !confirmingPending) {
+      held = { value: iso, suggested: nextFutureAnniversary(iso, todayISO()) };
+      b = { ...b, pendingReadyDate: held };
+    } else {
+      set("booking.readyToShipDate", bk.readyToShipDate);
+      if (iso) b = { ...b, pendingReadyDate: null };
+    }
+  }
   // City before country so the country is derived from the city and any conflict is caught.
-  const order = ["sellerName", "originCity", "destinationCity", "destinationType", "readyToShipDate", "sellerPriority", "pallets", "cartons", "declaredValue", "grossWeightKg", "deliveryAppointmentBooked"] as const;
+  const order = ["sellerName", "originCity", "destinationCity", "destinationType", "sellerPriority", "pallets", "cartons", "declaredValue", "grossWeightKg", "deliveryAppointmentBooked"] as const;
   for (const f of order) if (bk[f] !== undefined && bk[f] !== null) set(`booking.${f}`, bk[f]);
   if (bk.destinationCountry && !bk.destinationCity) {
     if (b.destinationCity && b.destinationCountry && b.destinationCountry.toLowerCase() !== bk.destinationCountry.toLowerCase()) {
@@ -240,7 +268,7 @@ export function applyExtraction(booking: Booking, items: Item[], ex: Extraction)
       rejected.push(v.readiness === "grounded" ? "Can't confirm yet. Fix the critical (Red) issues first." : "Can't confirm yet. Some details are still missing.");
     }
   }
-  return { booking: b, items: its, changes, rejected, unknown };
+  return { booking: b, items: its, changes, rejected, unknown, held };
 }
 
 // ---------------- Reply ----------------
@@ -267,6 +295,7 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - Briefly acknowledge what changed (if anything). If a change affected checks or the carrier, say so in one line.
 - If anything was rejected, explain why in one line and ask again.
 - If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later). Never say it doesn't matter.
+- If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was NOT saved. Say so plainly (it is N days in the past), ask whether they meant the suggested date, or want to keep the past date anyway, or want a different date. Do this right after the acknowledgement and before asking for anything else.
 - If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
 - If "clarify" is non-empty, ask those clarifying questions.
@@ -275,8 +304,10 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - Never use em dashes (—). Use commas, full stops or colons instead.`;
 
 export function factsForReply(applied: Applied, view: BookingView, clarify: string[]) {
-  const missing = orderMissing(view.missing);
-  const complete = missing.length === 0;
+  // While a past date waits for confirmation, don't also ask for the date as if nothing was given.
+  const pending = view.booking.pendingReadyDate;
+  const missing = orderMissing(view.missing).filter((m) => !(pending && m.path === "booking.readyToShipDate"));
+  const complete = view.missing.length === 0;
   const describe = (r: BookingView["results"][number]) =>
     `${r.ruleId} ${r.severity}${r.itemLabel ? ` [${r.itemLabel}]` : ""}: ${r.explanation}${r.suggestions[0] ? ` Suggested fix: ${r.suggestions[0].label}.` : ""}`;
   const open = view.results
@@ -293,6 +324,13 @@ export function factsForReply(applied: Applied, view: BookingView, clarify: stri
     rejected: applied.rejected,
     unknownNow: applied.unknown,
     clarify,
+    heldDate: applied.held
+      ? {
+          date: isoToDisplay(applied.held.value),
+          daysInPast: daysBetweenISO(applied.held.value, todayISO()),
+          suggested: applied.held.suggested ? isoToDisplay(applied.held.suggested) : null,
+        }
+      : null,
     flaggedNow: flagged.slice(0, 3).map(describe),
     askFor: missing.slice(0, 4).map((m) => m.label),
     stillMissingAfterThese: Math.max(0, missing.length - 4),
@@ -311,6 +349,8 @@ function templateReply(f: ReturnType<typeof factsForReply>): string {
   if (f.changesApplied.length) lines.push(`Updated: ${f.changesApplied.join("; ")}.`);
   for (const r of f.rejected) lines.push(r);
   for (const c of f.clarify) lines.push(c);
+  if (f.heldDate)
+    lines.push(`I haven't saved ${f.heldDate.date} as the ready-to-ship date because it is ${f.heldDate.daysInPast} days in the past.${f.heldDate.suggested ? ` Did you mean ${f.heldDate.suggested}?` : ""} Reply with the right date, or say "keep it" to use ${f.heldDate.date} anyway.`);
   for (const i of f.flaggedNow) lines.push(`Please check: ${i.replace(/^R-\d+ (Red|Amber)(?: \[[^\]]*\])?: /, "")}`);
   if (f.askFor.length) {
     lines.push("To complete the booking I still need:");

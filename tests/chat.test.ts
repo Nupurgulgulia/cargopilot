@@ -11,14 +11,30 @@ describe("past ready-to-ship date", () => {
     expect(nextFutureAnniversary("2024-02-29", "2026-01-10")).toBeNull();
   });
 
-  it("is flagged in the same chat reply, with a one-click fix", () => {
-    const applied = applyExtraction(emptyBooking(), [], { booking: { readyToShipDate: "05-11-2025" } });
-    const view = buildView(applied.booking, applied.items, new Date("2026-10-26T09:00:00Z"));
-    const facts = factsForReply(applied, view, []);
-    expect(facts.flaggedNow).toHaveLength(1);
-    expect(facts.flaggedNow[0]).toContain("R-10 Amber");
-    expect(facts.flaggedNow[0]).toContain("Did you mean 05-11-2026?");
-    expect(view.results.find((r) => r.ruleId === "R-10")!.suggestions[0]).toMatchObject({ value: "2026-11-05" });
+  it("is held back in chat, not saved, until the seller confirms or corrects it", () => {
+    const held = applyExtraction(emptyBooking(), [], { booking: { readyToShipDate: "23-11-2024" } });
+    expect(held.booking.readyToShipDate).toBeNull();
+    expect(held.booking.pendingReadyDate).toEqual({ value: "2024-11-23", suggested: expect.stringMatching(/-11-23$/) });
+    const facts = factsForReply(held, buildView(held.booking, held.items), []);
+    expect(facts.heldDate?.date).toBe("23-11-2024");
+    expect(facts.askFor).not.toContain("Ready-to-ship date");
+
+    // Accepting the suggestion saves it and clears the pending date.
+    const fixed = applyExtraction(held.booking, held.items, { booking: { readyToShipDate: held.booking.pendingReadyDate!.suggested! } });
+    expect(fixed.booking.readyToShipDate).toBe(held.booking.pendingReadyDate!.suggested);
+    expect(fixed.booking.pendingReadyDate).toBeNull();
+
+    // Explicitly keeping the past date saves it, and R-10 then flags it.
+    const kept = applyExtraction(held.booking, held.items, { booking: { readyToShipDate: "23-11-2024" }, keepPastDate: true });
+    expect(kept.booking.readyToShipDate).toBe("2024-11-23");
+    expect(buildView(kept.booking, kept.items).results.find((r) => r.ruleId === "R-10")!.status).toBe("fail");
+  });
+
+  it("R-10 offers the corrected date as a one-click fix", () => {
+    const view = buildView({ ...emptyBooking(), readyToShipDate: "2025-11-05" }, [], new Date("2026-10-26T09:00:00Z"));
+    const r10 = view.results.find((r) => r.ruleId === "R-10")!;
+    expect(r10.explanation).toContain("Did you mean 05-11-2026?");
+    expect(r10.suggestions[0]).toMatchObject({ value: "2026-11-05" });
   });
 });
 

@@ -32,7 +32,14 @@ export function BookingSummary({ view, highlight }: { view: BookingView; highlig
         <F path="booking.originCity" label="From" value={b.originCity ? `${b.originCity}, UK` : null} />
         <F path="booking.destinationCity" label="To" value={b.destinationCity ? `${b.destinationCity}, ${b.destinationCountry}` : null} />
         <F path="booking.destinationType" label="Site type" value={b.destinationType} />
-        <F path="booking.readyToShipDate" label="Ready to ship" value={b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : null} />
+        {b.pendingReadyDate && !b.readyToShipDate ? (
+          <div className="rounded-md bg-amber-50 px-2 py-1.5" title="This date is in the past, so it hasn't been saved. Confirm or correct it in the chat.">
+            <div className="text-[11px] text-amber-800">Ready to ship</div>
+            <div className="text-sm italic text-amber-800">{isoToDisplay(b.pendingReadyDate.value)}? Not saved, past date</div>
+          </div>
+        ) : (
+          <F path="booking.readyToShipDate" label="Ready to ship" value={b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : null} />
+        )}
         <F path="booking.sellerPriority" label="Priority" value={b.sellerPriority} />
         <F path="booking.pallets" label="Pallets" value={b.pallets != null ? num(b.pallets) : null} />
         <F path="booking.cartons" label="Total cartons" value={b.cartons != null ? num(b.cartons) : null} />

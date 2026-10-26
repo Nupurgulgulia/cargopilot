@@ -35,6 +35,8 @@ export interface Booking {
   skippedFields?: string[];
   /** When the seller confirmed the prepared booking. */
   sellerConfirmedAt?: string | null;
+  /** Chat only: a past ready-to-ship date waiting for the seller to confirm or correct it (not yet saved). */
+  pendingReadyDate?: { value: string; suggested: string | null } | null;
   /** "chat" while details are being collected: blank fields we haven't asked about yet are pending, not failures. */
   mode?: "chat" | "upload";
   /** Problems found while reading the uploaded row (bad numbers, unknown values…). */
