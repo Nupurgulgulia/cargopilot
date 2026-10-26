@@ -1,75 +1,350 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+/*
+  CargoPilot design system: "Skyline" (see docs/DESIGN.md before changing anything here).
+  Inspired by a flight-booking app: a warm orange-to-peach sky at the top of every page,
+  white rounded cards, dark charcoal "ticket" cards, one vivid orange accent, Poppins type
+  and solid pill statuses.
 
-  --color-navy-950: #050d1c;
-  --color-navy-900: #0a1628;
-  --color-navy-800: #12233d;
-  --color-navy-700: #1c3557;
-  --color-teal-brand: #0d9488;
+  Every colour scale points at a CSS variable. :root is the light sky theme; wrap a region in
+  .ticket for the dark charcoal surface (or .paper to force white). Utilities such as
+  text-slate-900 or bg-red-50 then read correctly on either surface.
+*/
+@theme inline {
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, monospace;
+  --font-display: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
 
-  --color-red-status: #c42b1c;
-  --color-amber-status: #b45309;
-  --color-green-status: #047857;
+  --color-slate-50: var(--n-50);
+  --color-slate-100: var(--n-100);
+  --color-slate-200: var(--n-200);
+  --color-slate-300: var(--n-300);
+  --color-slate-400: var(--n-400);
+  --color-slate-500: var(--n-500);
+  --color-slate-600: var(--n-600);
+  --color-slate-700: var(--n-700);
+  --color-slate-800: var(--n-800);
+  --color-slate-900: var(--n-900);
+
+  /* Accent: sky orange (the old "teal" utilities now mean the accent) */
+  --color-teal-50: var(--a-50);
+  --color-teal-100: var(--a-100);
+  --color-teal-200: var(--a-200);
+  --color-teal-300: var(--a-300);
+  --color-teal-400: var(--a-400);
+  --color-teal-500: var(--a-500);
+  --color-teal-600: var(--a-600);
+  --color-teal-700: var(--a-700);
+  --color-teal-800: var(--a-800);
+  --color-teal-900: var(--a-900);
+
+  --color-red-50: var(--r-50);
+  --color-red-100: var(--r-100);
+  --color-red-200: var(--r-200);
+  --color-red-500: var(--r-500);
+  --color-red-600: var(--r-600);
+  --color-red-700: var(--r-700);
+  --color-red-800: var(--r-800);
+  --color-red-900: var(--r-900);
+
+  --color-amber-50: var(--y-50);
+  --color-amber-100: var(--y-100);
+  --color-amber-200: var(--y-200);
+  --color-amber-400: var(--y-400);
+  --color-amber-500: var(--y-500);
+  --color-amber-600: var(--y-600);
+  --color-amber-700: var(--y-700);
+  --color-amber-800: var(--y-800);
+  --color-amber-900: var(--y-900);
+
+  --color-emerald-50: var(--g-50);
+  --color-emerald-100: var(--g-100);
+  --color-emerald-200: var(--g-200);
+  --color-emerald-400: var(--g-400);
+  --color-emerald-500: var(--g-500);
+  --color-emerald-600: var(--g-600);
+  --color-emerald-700: var(--g-700);
+  --color-emerald-800: var(--g-800);
+  --color-emerald-900: var(--g-900);
 }
 
+/* Light sky theme (default) */
+:root,
+.paper {
+  color-scheme: light;
+  --canvas: #fff6f0;
+  --page: #fff6f0;
+  --surface: #ffffff;
+  --surface-2: #fbf6f2;
+  --line: #f0e4da;
+  --inverse: #2b2522;
+  --on-inverse: #ffffff;
+  --accent: #f47b20;
+  --on-accent: #ffffff;
+  --shadow: 0 1px 2px rgb(74 40 16 / 0.04), 0 8px 24px -12px rgb(74 40 16 / 0.14);
+
+  --n-50: #fbf7f4; --n-100: #f4eeea; --n-200: #ebe2db; --n-300: #d9cdc4; --n-400: #a89c93;
+  --n-500: #847870; --n-600: #655a52; --n-700: #4a413b; --n-800: #342d28; --n-900: #1f1a17;
+
+  --a-50: #fff1e7; --a-100: #ffe1cc; --a-200: #ffc69f; --a-300: #ffa266; --a-400: #ff8a3d;
+  --a-500: #f47b20; --a-600: #ea6a0c; --a-700: #c85708; --a-800: #9e4506; --a-900: #733304;
+
+  --r-50: #ffefee; --r-100: #ffd8d5; --r-200: #ffb3ad; --r-500: #f04438; --r-600: #e0352a; --r-700: #b42318; --r-800: #912018; --r-900: #7a1a14;
+  --y-50: #fff9dc; --y-100: #fff0a8; --y-200: #fde272; --y-400: #f5c518; --y-500: #ebb80c; --y-600: #ca8a04; --y-700: #9a6503; --y-800: #7a4f06; --y-900: #5f3d07;
+  --g-50: #e9f9ed; --g-100: #c9f0d3; --g-200: #96e2a8; --g-400: #4cc764; --g-500: #33b24c; --g-600: #22963a; --g-700: #1a7a2f; --g-800: #156127; --g-900: #114f20;
+
+  /* Semantic aliases, re-declared in each scope so they resolve against that scope's values */
+  --color-paper: var(--page);
+  --color-card: var(--surface);
+  --color-raised: var(--surface-2);
+  --color-ink: var(--inverse);
+  --color-on-ink: var(--on-inverse);
+  --color-line: var(--line);
+  --color-signal: var(--accent);
+  --color-on-signal: var(--on-accent);
+}
+.paper {
+  --page: #fbf7f4;
+  background: var(--surface);
+  color: var(--n-900);
+}
+
+/* Dark charcoal "ticket" surface */
+.ticket {
+  color-scheme: dark;
+  --page: #1f1a17;
+  --surface: #2b2522;
+  --surface-2: #352e2a;
+  --line: #463c35;
+  --inverse: #ffffff;
+  --on-inverse: #2b2522;
+  --accent: #ff8a3d;
+  --on-accent: #ffffff;
+  --shadow: 0 10px 30px -12px rgb(31 26 23 / 0.5);
+
+  --n-50: #352e2a; --n-100: #3d3530; --n-200: #4a413b; --n-300: #5a5049; --n-400: #8a7f77;
+  --n-500: #a89c93; --n-600: #c2b8b0; --n-700: #dad2cb; --n-800: #ede7e2; --n-900: #ffffff;
+
+  --a-50: rgb(255 138 61 / 0.12); --a-100: rgb(255 138 61 / 0.2); --a-200: rgb(255 138 61 / 0.4);
+  --a-300: #ffb07a; --a-400: #ff8a3d; --a-500: #f47b20; --a-600: #f47b20; --a-700: #ff9a55; --a-800: #ffb07a; --a-900: #ffd2b0;
+
+  --r-50: rgb(240 68 56 / 0.14); --r-100: rgb(240 68 56 / 0.22); --r-200: rgb(240 68 56 / 0.42);
+  --r-500: #ff6b5e; --r-600: #f04438; --r-700: #ff8a80; --r-800: #ffb0a8; --r-900: #ffd0cb;
+  --y-50: rgb(245 197 24 / 0.14); --y-100: rgb(245 197 24 / 0.22); --y-200: rgb(245 197 24 / 0.42);
+  --y-400: #f5c518; --y-500: #f5c518; --y-600: #ebb80c; --y-700: #f8d64e; --y-800: #fbe385; --y-900: #fdf0bd;
+  --g-50: rgb(76 199 100 / 0.14); --g-100: rgb(76 199 100 / 0.22); --g-200: rgb(76 199 100 / 0.42);
+  --g-400: #4cc764; --g-500: #4cc764; --g-600: #33b24c; --g-700: #6fd884; --g-800: #9be6aa; --g-900: #c9f0d3;
+
+  --color-paper: var(--page);
+  --color-card: var(--surface);
+  --color-raised: var(--surface-2);
+  --color-ink: var(--inverse);
+  --color-on-ink: var(--on-inverse);
+  --color-line: var(--line);
+  --color-signal: var(--accent);
+  --color-on-signal: var(--on-accent);
+
+  background: var(--surface);
+  color: var(--n-900);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* The sky: orange behind the header, fading through peach into the warm canvas. */
 body {
-  background: #f7f8fa;
-  color: #0f172a;
-  font-feature-settings: "cv11", "ss01";
+  background:
+    radial-gradient(1200px 380px at 85% -40px, rgb(255 255 255 / 0.35), transparent 70%),
+    linear-gradient(180deg, #f47b20 0, #f89a55 80px, #fbbf94 170px, #fde3d1 280px, var(--canvas) 420px) no-repeat,
+    var(--canvas);
+  color: var(--n-800);
   -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: rgb(13 148 136 / 0.18);
+  background: rgb(244 123 32 / 0.25);
 }
 
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- surfaces ---------- */
 @utility card {
-  @apply rounded-2xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_1px_1px_rgba(15,23,42,0.02)];
+  @apply rounded-3xl border border-[var(--color-line)] bg-[var(--color-card)];
+  box-shadow: var(--shadow);
 }
 
 @utility btn {
-  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition
-    disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-600;
+  @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-[background,color,border-color,transform,filter] duration-150
+    disabled:cursor-not-allowed disabled:opacity-45 active:translate-y-px;
 }
+/* Neutral high-contrast action (charcoal) */
 @utility btn-primary {
-  @apply btn bg-teal-700 text-white shadow-sm shadow-teal-900/10 hover:bg-teal-800;
+  @apply btn bg-[var(--color-ink)] text-[var(--color-on-ink)] hover:opacity-90;
 }
+/* The one accent action per view (orange) */
 @utility btn-dark {
-  @apply btn bg-navy-900 text-white shadow-sm hover:bg-navy-800;
+  @apply btn bg-[var(--color-signal)] text-[var(--color-on-signal)] hover:brightness-105;
+  box-shadow: 0 8px 18px -8px rgb(244 123 32 / 0.7);
 }
 @utility btn-ghost {
-  @apply btn border border-slate-200 bg-white text-slate-700 shadow-sm hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900;
+  @apply btn border border-[var(--color-line)] bg-[var(--color-card)] text-slate-800 hover:border-teal-300 hover:text-teal-700;
 }
 @utility input {
-  @apply w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400
-    focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-600/10;
+  @apply w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper)] px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400
+    transition-[border-color,box-shadow] duration-150 focus:border-[var(--color-signal)] focus:outline-none;
 }
 @utility label-xs {
   @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500;
 }
 @utility eyebrow {
-  @apply text-xs font-semibold uppercase tracking-[0.14em] text-teal-700;
+  @apply text-xs font-semibold uppercase tracking-[0.1em] text-teal-700;
+}
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+@utility num {
+  @apply font-mono tabular-nums;
 }
 
+/* Boarding-pass perforation: a dashed tear line with a notch cut out on each side. */
+.perforation {
+  position: relative;
+  border-top: 1.5px dashed var(--line);
+}
+.perforation::before,
+.perforation::after {
+  content: "";
+  position: absolute;
+  top: -11px;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--canvas);
+}
+.perforation::before {
+  left: -11px;
+}
+.perforation::after {
+  right: -11px;
+}
+
+/* ---------- motion ---------- */
+
+/* Border beam: a light that travels around an element's border. */
+.border-beam {
+  position: relative;
+  isolation: isolate;
+}
+.border-beam::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(from var(--beam-angle, 0deg), transparent 0 72%, var(--accent) 86%, transparent 96%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam-spin 3.2s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+
+/* Spotlight that follows the cursor (position set from JS). */
+.spotlight {
+  position: relative;
+}
+.spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgb(244 123 32 / 0.08), transparent 60%);
+}
+.spotlight:hover::before {
+  opacity: 1;
+}
+
+/* Live dot */
+.live-dot {
+  position: relative;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  opacity: 0;
+  animation: ping 2s ease-out infinite;
+}
+@keyframes ping {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* Chat typing indicator */
 @keyframes pulse-dot {
-  0%, 80%, 100% { opacity: 0.25; }
-  40% { opacity: 1; }
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
 }
 .typing span {
   animation: pulse-dot 1.2s infinite;
 }
-.typing span:nth-child(2) { animation-delay: 0.15s; }
-.typing span:nth-child(3) { animation-delay: 0.3s; }
+.typing span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing span:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
-/* Subtle grid behind the dark hero, like most logistics/infra product sites. */
-.hero-grid {
-  background-image:
-    radial-gradient(60rem 30rem at 85% -10%, rgb(13 148 136 / 0.28), transparent 60%),
-    radial-gradient(40rem 24rem at -10% 110%, rgb(56 189 248 / 0.12), transparent 60%),
-    linear-gradient(rgb(255 255 255 / 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px);
-  background-size: auto, auto, 48px 48px, 48px 48px;
+/* Elements revealed by GSAP start hidden only when JS + motion are available. */
+.js-motion [data-reveal] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .js-motion [data-reveal] {
+    opacity: 1 !important;
+  }
 }

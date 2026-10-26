@@ -20,7 +20,7 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="eyebrow">Audits</div>
-          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">Recent audits</h1>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">Recent audits</h1>
           <p className="mt-1 text-[15px] text-slate-600">All the spreadsheets you&apos;ve checked, and how CargoPilot reaches each result.</p>
         </div>
       </div>
@@ -32,7 +32,7 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
             href={t.key === "recent" ? "/audits" : `/audits?tab=${t.key}`}
             aria-current={active === t.key ? "page" : undefined}
             className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              active === t.key ? "border-teal-600 text-teal-800" : "border-transparent text-slate-500 hover:text-slate-800"
+              active === t.key ? "border-[var(--color-signal)] text-slate-900" : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             {t.label}
@@ -71,16 +71,16 @@ async function RecentAudits() {
     <ul className="card divide-y divide-slate-100">
       {uploads.map((u) => (
         <li key={u.id}>
-          <Link href={`/audit/${u.id}`} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 hover:bg-slate-50">
+          <Link href={`/audit/${u.id}`} className="group flex flex-wrap items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50">
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-slate-900">{u.file_name}</div>
-              <div className="text-xs text-slate-500">
+              <div className="truncate text-sm font-medium text-slate-900 group-hover:text-teal-700">{u.file_name}</div>
+              <div className="font-mono text-[11px] uppercase tracking-wide text-slate-500">
                 {u.booking_count} bookings · {new Date(u.created_at).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" })}
               </div>
             </div>
             <div className="flex gap-2 text-xs">
               {(["grounded", "attention", "cleared"] as const).map((r) => (
-                <span key={r} title={READINESS_META[r].label} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold ${READINESS_META[r].cls}`}>
+                <span key={r} title={READINESS_META[r].label} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 font-semibold ${READINESS_META[r].cls}`}>
                   <ReadinessIcon r={r} className="h-3.5 w-3.5" /> {u[r]} <span className="sr-only">{READINESS_META[r].label}</span>
                 </span>
               ))}

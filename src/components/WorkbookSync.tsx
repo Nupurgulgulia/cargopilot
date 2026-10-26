@@ -140,7 +140,7 @@ function SheetHelp({ email }: { email: string }) {
       </button>
       {open && (
         <span role="dialog" className="absolute left-0 top-full z-20 pt-2">
-          <span className="block w-80 rounded-xl border border-slate-200 bg-white p-4 text-left text-xs leading-relaxed text-slate-600 shadow-xl shadow-slate-900/10">
+          <span className="block w-80 rounded-xl border border-slate-200 bg-[var(--color-raised)] p-4 text-left text-xs leading-relaxed text-slate-600 shadow-xl shadow-black/40">
             <span className="block text-sm font-semibold text-slate-900">Connect a Google Sheet</span>
             <span className="mt-2 block">
               <b className="text-slate-800">1.</b> In Google Sheets, click <b>Share</b> and add this email as <b>Editor</b>:
@@ -149,7 +149,7 @@ function SheetHelp({ email }: { email: string }) {
               <span className="min-w-0 flex-1 truncate font-mono text-[11px] text-slate-800" title={email}>{email}</span>
               <button
                 type="button"
-                className="shrink-0 rounded-md bg-white px-2 py-0.5 text-[11px] font-medium text-teal-700 ring-1 ring-slate-200 hover:bg-teal-50"
+                className="shrink-0 rounded-md bg-[var(--color-card)] px-2 py-0.5 text-[11px] font-medium text-teal-700 ring-1 ring-slate-200 hover:bg-teal-50"
                 onClick={() => {
                   navigator.clipboard?.writeText(email);
                   setCopied(true);

@@ -64,7 +64,7 @@ export function HsSuggest({
           <div className="label-xs">Suggested HS codes</div>
           <ul className="space-y-1.5">
             {items.map((s, i) => (
-              <li key={s.code} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-2.5">
+              <li key={s.code} className="flex items-start gap-3 rounded-lg border border-slate-200 bg-[var(--color-card)] p-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-semibold text-slate-900">{s.code}</span>

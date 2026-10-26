@@ -12,15 +12,15 @@ export function AddressesCard({ view, run }: { view: BookingView; run: RunAction
   const [editing, setEditing] = useState<Side | null>(null);
 
   return (
-    <section id="addresses" className="card p-4">
+    <section id="addresses" className="paper card rounded-2xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-slate-900">Addresses & contacts</h3>
+        <h3 className="text-base font-bold text-slate-900">Addresses & contacts</h3>
         {gaps.length === 0 ? (
-          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
             <Check className="h-3.5 w-3.5" /> Ready for the carrier
           </span>
         ) : (
-          <span className="text-xs text-amber-800">Needed before emailing the carrier</span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700"><span className="h-1.5 w-1.5 rounded-full bg-teal-500" />Needed before emailing the carrier</span>
         )}
       </div>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -29,14 +29,14 @@ export function AddressesCard({ view, run }: { view: BookingView; run: RunAction
           const city = side.key === "collection" ? b.originCity : b.destinationCity;
           const country = side.key === "collection" ? b.originCountry ?? "United Kingdom" : b.destinationCountry;
           return (
-            <div key={side.key} className="rounded-xl border border-slate-200 p-3">
+            <div key={side.key} className={`rounded-2xl border p-3.5 ${a ? "border-slate-200 bg-slate-50" : "border-dashed border-slate-300 bg-slate-50"}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <div className="label-xs">{side.title}</div>
                   <div className="text-xs text-slate-500">{[city, country].filter(Boolean).join(", ") || "City not set yet"}</div>
                 </div>
                 {editing !== side.key && (
-                  <button type="button" className="text-xs font-medium text-teal-700 hover:underline" onClick={() => setEditing(side.key)}>
+                  <button type="button" className="rounded-full border border-teal-200 bg-[var(--color-card)] px-3 py-1 text-xs font-semibold text-teal-700 hover:bg-teal-50" onClick={() => setEditing(side.key)}>
                     {a ? "Edit" : "Add"}
                   </button>
                 )}

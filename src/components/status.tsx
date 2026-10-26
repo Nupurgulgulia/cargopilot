@@ -1,24 +1,27 @@
 import type { Readiness, RuleStatus, Severity } from "@/lib/types";
 import { Check, Dots, Plane, Question, Stop, Warn } from "./icons";
 
-export const READINESS_META: Record<Readiness, { label: string; sub: string; cls: string; dot: string }> = {
+export const READINESS_META: Record<Readiness, { label: string; sub: string; cls: string; dot: string; board: string }> = {
   grounded: {
     label: "Grounded",
     sub: "Has problems that must be fixed before it can ship",
-    cls: "bg-red-50 text-red-800 border-red-200",
+    cls: "bg-red-500 text-white border-red-500",
     dot: "bg-red-600",
+    board: "GROUNDED",
   },
   attention: {
     label: "Needs Attention",
     sub: "A few things to check before it ships",
-    cls: "bg-amber-50 text-amber-900 border-amber-200",
+    cls: "bg-amber-400 text-[#3d2a00] border-amber-400",
     dot: "bg-amber-500",
+    board: "NEEDS ATTENTION",
   },
   cleared: {
     label: "Cleared for Dispatch",
     sub: "Passed every check and is ready for your final review",
-    cls: "bg-emerald-50 text-emerald-800 border-emerald-200",
+    cls: "bg-emerald-500 text-white border-emerald-500",
     dot: "bg-emerald-600",
+    board: "CLEARED FOR DISPATCH",
   },
 };
 
@@ -31,8 +34,8 @@ export function ReadinessIcon({ r, className = "h-5 w-5" }: { r: Readiness; clas
 export function ReadinessBadge({ r, size = "sm" }: { r: Readiness; size?: "sm" | "lg" }) {
   const m = READINESS_META[r];
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border font-semibold ${m.cls} ${size === "lg" ? "px-3 py-1 text-sm" : "px-2 py-0.5 text-xs"}`}>
-      <ReadinessIcon r={r} className={size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5"} />
+    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border font-semibold ${m.cls} ${size === "lg" ? "px-3 py-1 text-xs" : "px-2.5 py-0.5 text-[11px]"}`}>
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
       {m.label}
     </span>
   );
@@ -40,12 +43,12 @@ export function ReadinessBadge({ r, size = "sm" }: { r: Readiness; size?: "sm" |
 
 export function SeverityTag({ s }: { s: Severity }) {
   return s === "Red" ? (
-    <span className="inline-flex items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-red-800">
-      <Stop className="h-3 w-3" /> Red · critical
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+      Critical
     </span>
   ) : (
-    <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-amber-900">
-      <Warn className="h-3 w-3" /> Amber · warning
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-400 px-2.5 py-0.5 text-[11px] font-semibold text-[#3d2a00]">
+      Warning
     </span>
   );
 }

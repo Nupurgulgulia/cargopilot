@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Calc, Chat, Check, Truck, Upload } from "@/components/icons";
 import { ReadinessBadge } from "@/components/status";
+import { NumberTicker, Reveal } from "@/components/motion/primitives";
+import { RouteMap } from "@/components/motion/RouteMap";
 import type { Readiness } from "@/lib/types";
 import { sessionId, sql } from "@/lib/server/db";
 
@@ -28,6 +30,12 @@ const PILLARS = [
   },
 ];
 
+const STEPS = [
+  { no: "1", title: "Describe or upload", body: "Chat in plain English, or drop your Bookings and Items workbook." },
+  { no: "2", title: "Check against 10 rules", body: "Each problem comes with its severity, the numbers behind it and a one-click fix." },
+  { no: "3", title: "Pick a carrier and confirm", body: "Get the best carrier for your priority, then confirm and email it." },
+];
+
 export default async function Dashboard() {
   const sid = await sessionId();
   const [stats] = (await sql`
@@ -44,132 +52,156 @@ export default async function Dashboard() {
     SELECT id, file_name, booking_count, created_at FROM uploads WHERE session_id = ${sid} ORDER BY created_at DESC LIMIT 5`) as {
     id: string; file_name: string; booking_count: number; created_at: string;
   }[];
+  const fresh = stats.total === 0 && uploads.length === 0;
 
   return (
-    <div>
-      <section className="hero-grid bg-navy-900 text-white">
-        <div className="mx-auto max-w-7xl px-4 pb-24 pt-14 sm:pt-20">
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-teal-400" />
-            UK → Germany · France · Netherlands
-          </div>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold leading-[1.08] tracking-[-0.025em] sm:text-[3.4rem]">
-            Catch every booking error <span className="text-teal-300">before it ships.</span>
-          </h1>
-          <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-            Describe your shipment in plain English, or upload your booking spreadsheet. CargoPilot checks it against 10 rules, explains
-            any problem and how to fix it, and suggests the best carrier.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <Link href="/chat" className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-5 py-3 text-sm font-semibold text-navy-950 shadow-lg shadow-teal-500/20 transition hover:bg-teal-400">
-              <Chat className="h-4 w-4" /> Start a booking
-            </Link>
-            <Link href="/upload" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-              <Upload className="h-4 w-4" /> Upload a spreadsheet
-            </Link>
-          </div>
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
+          <p className="mt-1 text-sm text-slate-700">Pre-flight checks for UK → Germany, France and Netherlands freight.</p>
         </div>
-      </section>
-
-      <div className="mx-auto -mt-12 max-w-7xl space-y-8 px-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Bookings checked" value={stats.total} hint="From chat and uploads" />
-          <Stat label="Critical issues" value={stats.red} tone="text-red-700" hint="Must be fixed before shipping" />
-          <Stat label="Warnings" value={stats.amber} tone="text-amber-700" hint="Worth checking before shipping" />
-          <Stat label="Cleared for dispatch" value={stats.cleared} tone="text-emerald-700" hint="Ready to ship" />
+        <div className="flex flex-wrap gap-2">
+          <Link href="/upload" className="btn-ghost"><Upload className="h-4 w-4" /> Upload workbook</Link>
+          <Link href="/chat" className="btn-dark"><Chat className="h-4 w-4" /> New shipment</Link>
         </div>
-
-        <div className="grid gap-4 lg:grid-cols-3">
-          <section className="card overflow-hidden lg:col-span-2">
-            <Header title="Recent bookings" sub="Your latest shipments" />
-            {recent.length === 0 ? (
-              <Empty title="No bookings yet" body="Bookings you start in chat or upload in a spreadsheet will appear here." />
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {recent.map((r) => (
-                  <li key={r.id}>
-                    <Link href={r.source === "chat" ? `/chat/${r.id}` : `/booking/${r.id}`} className="flex items-center justify-between gap-3 px-5 py-3.5 transition hover:bg-slate-50">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-900">
-                          {r.ref} {r.seller && <span className="font-normal text-slate-500">· {r.seller}</span>}
-                        </div>
-                        <div className="mt-0.5 text-xs text-slate-500">
-                          {r.origin ?? "?"} → {r.dest ?? "?"} · {r.source === "chat" ? "Chat" : "Workbook"} · {when(r.updated_at)}
-                        </div>
-                      </div>
-                      {r.readiness && <ReadinessBadge r={r.readiness} />}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section className="card overflow-hidden">
-            <Header
-              title="Recent audits"
-              action={uploads.length > 0 ? <Link href="/audits" className="text-xs font-medium text-teal-700 hover:underline">View all →</Link> : undefined}
-            />
-            {uploads.length === 0 ? (
-              <Empty title="No audits yet" body="Upload a spreadsheet to check many bookings at once." />
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {uploads.map((u) => (
-                  <li key={u.id}>
-                    <Link href={`/audit/${u.id}`} className="block px-5 py-3.5 transition hover:bg-slate-50">
-                      <div className="truncate text-sm font-medium text-slate-900">{u.file_name}</div>
-                      <div className="mt-0.5 text-xs text-slate-500">{u.booking_count} bookings · {when(u.created_at)}</div>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </div>
-
-        <section className="grid gap-4 md:grid-cols-3">
-          {PILLARS.map((p) => (
-            <div key={p.title} className="card p-5">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-700 ring-1 ring-teal-100">
-                <p.icon className="h-4.5 w-4.5" />
-              </span>
-              <h3 className="mt-3 text-sm font-semibold text-slate-900">{p.title}</h3>
-              <p className="mt-1 text-sm leading-relaxed text-slate-600">{p.body}</p>
-            </div>
-          ))}
-        </section>
       </div>
+
+      {fresh ? (
+        <Reveal className="card overflow-hidden">
+          <div className="grid lg:grid-cols-[1.1fr_1fr]">
+            <div data-reveal className="p-6 sm:p-8">
+              <div className="eyebrow">Get started</div>
+              <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900">Check your first booking in under a minute</h2>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">
+                No login needed. Start a conversation or upload a workbook, and CargoPilot shows what&apos;s wrong, how serious it is and how to fix it.
+              </p>
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                <Link href="/chat" className="spotlight group rounded-[10px] border border-[var(--color-line)] bg-[var(--color-raised)] p-4 transition-colors hover:border-teal-500">
+                  <Chat className="h-5 w-5 text-teal-700" />
+                  <div className="mt-3 text-sm font-semibold text-slate-900">Book in chat</div>
+                  <div className="mt-0.5 text-xs text-slate-500">Describe the shipment. It asks only for what&apos;s missing.</div>
+                </Link>
+                <Link href="/upload" className="spotlight group rounded-[10px] border border-[var(--color-line)] bg-[var(--color-raised)] p-4 transition-colors hover:border-teal-500">
+                  <Upload className="h-5 w-5 text-teal-700" />
+                  <div className="mt-3 text-sm font-semibold text-slate-900">Audit a workbook</div>
+                  <div className="mt-0.5 text-xs text-slate-500">Check every booking at once. A sample file is on the next page.</div>
+                </Link>
+              </div>
+            </div>
+            <ol data-reveal className="border-t border-[var(--color-line)] bg-[var(--color-raised)] p-6 sm:p-8 lg:border-l lg:border-t-0">
+              {STEPS.map((s) => (
+                <li key={s.no} className="flex gap-4 py-3 first:pt-0 last:pb-0">
+                  <span className="num flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 text-xs text-teal-700">{s.no}</span>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{s.title}</div>
+                    <div className="mt-0.5 text-sm text-slate-500">{s.body}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </Reveal>
+      ) : (
+        <>
+          <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4">
+            <Stat label="Bookings checked" value={stats.total} hint="From chat and uploads" />
+            <Stat label="Critical issues" value={stats.red} tone="text-red-700" bar="bg-red-500" hint="Must be fixed before shipping" />
+            <Stat label="Warnings" value={stats.amber} tone="text-amber-700" bar="bg-amber-500" hint="Worth checking before shipping" />
+            <Stat label="Cleared for dispatch" value={stats.cleared} tone="text-emerald-700" bar="bg-emerald-500" hint="Ready to ship" />
+          </Reveal>
+
+          <Reveal className="grid gap-4 lg:grid-cols-3">
+            <section data-reveal className="card overflow-hidden lg:col-span-2">
+              <Header title="Recent bookings" action={<Link href="/chat" className="text-xs font-semibold text-teal-700 hover:underline">New shipment →</Link>} />
+              {recent.length === 0 ? (
+                <Empty body="Bookings you start in chat will appear here." />
+              ) : (
+                <ul>
+                  {recent.map((r) => (
+                    <li key={r.id} className="border-t border-[var(--color-line)] first:border-t-0">
+                      <Link href={r.source === "chat" ? `/chat/${r.id}` : `/booking/${r.id}`} className="group grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 truncate text-sm">
+                            <span className="num font-medium text-slate-900">{r.ref}</span>
+                            {r.seller && <span className="truncate text-slate-500">{r.seller}</span>}
+                          </div>
+                          <div className="mt-0.5 text-xs text-slate-500">
+                            {r.origin ?? "?"} → {r.dest ?? "?"} · {r.source === "chat" ? "Chat" : "Workbook"} · {when(r.updated_at)}
+                          </div>
+                        </div>
+                        {r.readiness && <ReadinessBadge r={r.readiness} />}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+
+            <section data-reveal className="card overflow-hidden">
+              <Header title="Recent audits" action={uploads.length > 0 ? <Link href="/audits" className="text-xs font-semibold text-teal-700 hover:underline">View all →</Link> : undefined} />
+              {uploads.length === 0 ? (
+                <Empty body="Upload a workbook to check many bookings at once." />
+              ) : (
+                <ul>
+                  {uploads.map((u) => (
+                    <li key={u.id} className="border-t border-[var(--color-line)] first:border-t-0">
+                      <Link href={`/audit/${u.id}`} className="block px-5 py-3 transition-colors hover:bg-slate-50">
+                        <div className="truncate text-sm font-medium text-slate-900">{u.file_name}</div>
+                        <div className="mt-0.5 text-xs text-slate-500">{u.booking_count} bookings · {when(u.created_at)}</div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </Reveal>
+        </>
+      )}
+
+      <Reveal scroll className="grid gap-4 md:grid-cols-3">
+        {PILLARS.map((p) => (
+          <div key={p.title} data-reveal className="card spotlight rounded-2xl p-5">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-teal-200 bg-teal-50 text-teal-700">
+              <p.icon className="h-5 w-5" />
+            </span>
+            <h3 className="mt-4 text-base font-bold text-slate-900">{p.title}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{p.body}</p>
+          </div>
+        ))}
+      </Reveal>
+
+      <section>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-bold text-slate-900">Lane rates</h2>
+          <p className="text-xs text-slate-500">The fixed rate card used for every recommendation. Click a city to compare carriers.</p>
+        </div>
+        <RouteMap />
+      </section>
     </div>
   );
 }
 
-function Stat({ label, value, tone = "text-slate-900", hint }: { label: string; value: number; tone?: string; hint?: string }) {
+function Stat({ label, value, tone = "text-slate-900", bar, hint }: { label: string; value: number; tone?: string; bar?: string; hint?: string }) {
   return (
-    <div className="card p-5">
+    <div data-reveal className="card relative overflow-hidden p-4">
+      {bar && <span className={`absolute inset-x-0 top-0 h-[2px] ${bar}`} />}
       <div className="label-xs">{label}</div>
-      <div className={`mt-2 text-3xl font-semibold tabular-nums tracking-tight ${tone}`}>{value}</div>
+      <div className={`mt-2 text-3xl font-bold tracking-tight ${tone}`}><NumberTicker value={value} className="font-sans" /></div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }
 
-function Header({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
+function Header({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-      <div>
-        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-        {sub && <p className="text-xs text-slate-500">{sub}</p>}
-      </div>
+    <div className="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-3.5">
+      <h2 className="text-sm font-bold text-slate-900">{title}</h2>
       {action}
     </div>
   );
 }
 
-function Empty({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="flex flex-col items-center px-5 py-12 text-center">
-      <div className="text-sm font-medium text-slate-900">{title}</div>
-      <p className="mt-1 max-w-xs text-sm text-slate-500">{body}</p>
-    </div>
-  );
+function Empty({ body }: { body: string }) {
+  return <p className="px-5 py-10 text-center text-sm text-slate-500">{body}</p>;
 }

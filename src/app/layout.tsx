@@ -1,38 +1,51 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Inter } from "next/font/google";
+import { JetBrains_Mono, Poppins } from "next/font/google";
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
 import { Logo } from "@/components/icons";
+import { CommandPalette } from "@/components/motion/CommandPalette";
+import { SpotlightTracker } from "@/components/motion/primitives";
+import { Toaster } from "@/components/motion/Toaster";
 import "./globals.css";
 
-const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+// Interface and code fonts. Swap them here; globals.css reads --font-ui and --font-code.
+const ui = Poppins({ variable: "--font-ui", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const code = JetBrains_Mono({ variable: "--font-code", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "CargoPilot: pre-flight checks for cross-border freight",
   description: "Book UK → EU freight in plain English. CargoPilot checks every booking against the rulebook and recommends the right carrier before anything ships.",
 };
 
+// Hide [data-reveal] elements before first paint only when JS runs and motion is allowed.
+const MOTION_FLAG = `try{if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('js-motion')}catch(e){}`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}>
-        <header className="sticky top-0 z-30 border-b border-white/5 bg-navy-900/95 text-white backdrop-blur supports-[backdrop-filter]:bg-navy-900/85">
-          <div className="mx-auto flex h-14 max-w-7xl items-center gap-8 px-4">
-            <Link href="/" className="flex items-center gap-2.5 font-semibold tracking-tight">
-              <Logo className="h-7 w-7 text-teal-400" />
-              <span className="text-[15px]">CargoPilot</span>
+    <html lang="en" className={`${ui.variable} ${code.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: MOTION_FLAG }} />
+      </head>
+      <body className="flex min-h-screen flex-col font-sans antialiased">
+        <header className="sticky top-0 z-40 px-4 pt-3">
+          <div className="ticket mx-auto flex h-14 max-w-7xl items-center gap-4 rounded-full py-1.5 pl-3 pr-2 shadow-[0_12px_30px_-12px_rgb(31_26_23/0.55)]">
+            <Link href="/" className="flex items-center gap-2.5">
+              <Logo className="h-7 w-7" />
+              <span className="hidden text-[15px] font-bold tracking-tight text-slate-900 sm:inline">CargoPilot</span>
             </Link>
             <NavLinks />
           </div>
         </header>
-        <main>{children}</main>
-        <footer className="mt-12 border-t border-slate-200/80">
+        <main className="flex-1">{children}</main>
+        <footer className="mt-16 border-t border-[var(--color-line)] bg-[var(--color-card)]">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-xs text-slate-500">
             <span>CargoPilot · Pre-flight checks for UK → EU freight</span>
             <span>Prepares and checks bookings. It doesn&apos;t book carriers or clear customs.</span>
           </div>
         </footer>
+        <CommandPalette />
+        <Toaster />
+        <SpotlightTracker />
       </body>
     </html>
   );

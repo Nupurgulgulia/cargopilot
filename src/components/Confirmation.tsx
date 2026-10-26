@@ -7,6 +7,8 @@ import type { RunAction } from "./FlightDeck";
 import { CarrierEmailPanel } from "./CarrierEmailPanel";
 import { Check } from "./icons";
 
+const WIDE = new Set(["Route", "Goods", "Packing", "Carrier", "Estimated delivery"]);
+
 export function Confirmation({ data, run }: { data: BookingPayload; run: RunAction }) {
   const { view } = data;
   const b = view.booking;
@@ -40,9 +42,9 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
         : null;
 
   return (
-    <section className="card p-4">
+    <section className="paper card rounded-2xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold text-slate-900">Booking confirmation & next steps</h3>
+        <h3 className="text-base font-bold text-slate-900">Booking confirmation & next steps</h3>
         {confirmedAt && (
           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
             <Check className="h-3.5 w-3.5" /> Confirmed
@@ -58,23 +60,29 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
         </p>
       )}
 
-      <dl className="mt-3 divide-y divide-slate-100 text-sm">
+      {/* Summary as bubbles; the long values take a full row. */}
+      <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
         {rows.map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[130px_1fr] gap-2 py-1.5">
-            <dt className="text-slate-500">{k}</dt>
-            <dd className="text-slate-900">{v}</dd>
+          <div key={k} className={`rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 ${WIDE.has(k) ? "sm:col-span-2" : ""}`}>
+            <dt className="text-[11px] font-medium text-slate-500">{k}</dt>
+            <dd className="mt-0.5 font-semibold text-slate-900">{v}</dd>
           </div>
         ))}
       </dl>
 
-      <h4 className="mt-4 text-sm font-semibold text-slate-900">What happens next</h4>
-      <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-slate-700">
-        {view.nextSteps.map((s, i) => <li key={i}>{s}</li>)}
+      <h4 className="mt-5 text-sm font-bold text-slate-900">What happens next</h4>
+      <ol className="mt-2 space-y-2 text-sm text-slate-700">
+        {view.nextSteps.map((s, i) => (
+          <li key={i} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+            <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 text-[11px] font-semibold text-teal-700">{i + 1}</span>
+            <span className="pt-0.5">{s}</span>
+          </li>
+        ))}
       </ol>
 
       {/* The result appears where the button was, so it is never off-screen. */}
       {confirmedAt ? (
-        <div role="status" className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <div role="status" className="mt-4 flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
           <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
             <Check className="h-3.5 w-3.5" />
           </span>
@@ -87,9 +95,9 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
           </div>
         </div>
       ) : (
-        <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="mt-4 flex flex-wrap items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-3">
           <button
-            className="btn-primary"
+            className="btn-dark rounded-full px-5"
             disabled={!canConfirm || busy}
             onClick={async () => {
               setBusy(true);

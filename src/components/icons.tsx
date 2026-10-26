@@ -3,8 +3,9 @@ const base = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinec
 
 export const Logo = ({ className }: P) => (
   <svg viewBox="0 0 32 32" className={className} aria-hidden>
-    <rect x="2" y="2" width="28" height="28" rx="8" fill="currentColor" opacity="0.15" />
-    <path d="M7 19.5 25 11l-4.5 11-4-4.2L12 22l.5-5.5L7 19.5Z" fill="currentColor" />
+    <rect x="1" y="1" width="30" height="30" rx="15" fill="#f47b20" />
+    <path d="M8 21.5h9.5" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
+    <path d="M8 10.5h16l-4.5 5.5H8" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
   </svg>
 );
 export const Check = ({ className }: P) => (<svg {...base} className={className}><path d="M20 6 9 17l-5-5" /></svg>);

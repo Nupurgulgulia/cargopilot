@@ -20,11 +20,11 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
   const top = chosenId ? rec.candidates.find((c) => c.carrier.id === chosenId)! : rec.recommended;
 
   return (
-    <section className="card p-4">
+    <section className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Truck className="h-5 w-5 text-teal-700" />
-          <h3 className="font-semibold text-slate-900">Carrier Matchmaker</h3>
+          <h3 className="text-base font-bold text-slate-900">Carrier Matchmaker</h3>
         </div>
         <label className="flex items-center gap-2 text-xs text-slate-600">
           Priority
@@ -43,14 +43,14 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
       {rec.unavailableReason && !top ? (
         <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{rec.unavailableReason}</p>
       ) : top ? (
-        <div className="mt-3 rounded-xl border-2 border-teal-600/70 bg-teal-50/40 p-4">
+        <div className="ticket border-beam mt-3 rounded-3xl p-5">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               <div className="label-xs text-teal-800">{chosenId ? "Your chosen carrier" : `Recommended · ${rec.priority}`}</div>
               <div className="text-lg font-semibold text-slate-900">{carrierLabel(top.carrier)}</div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-semibold text-slate-900">{top.totalCost != null ? gbp0(top.totalCost) : `${gbp0(top.carrier.pricePerPallet)}/pallet`}</div>
+              <div className="text-2xl font-bold tracking-tight text-slate-900">{top.totalCost != null ? gbp0(top.totalCost) : `${gbp0(top.carrier.pricePerPallet)}/pallet`}</div>
               {top.totalCost != null && <div className="text-xs text-slate-500">{b.pallets} × {gbp0(top.carrier.pricePerPallet)} per pallet</div>}
             </div>
           </div>
@@ -73,7 +73,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
       {rec.candidates.length > 0 && (
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="text-xs text-slate-500">
+            <thead className="font-mono text-[10.5px] uppercase tracking-wider text-slate-500">
               <tr className="border-b border-slate-200">
                 <th className="py-2 pr-2 font-medium">Carrier · service</th>
                 <th className="px-2 font-medium">Cost</th>
@@ -102,9 +102,9 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
 
 function Metric({ label, value, sub, bad }: { label: string; value: string; sub?: string; bad?: boolean }) {
   return (
-    <div className="rounded-lg bg-white px-2 py-2 shadow-sm">
-      <div className="text-[11px] text-slate-500">{label}</div>
-      <div className={`font-semibold ${bad ? "text-red-700" : "text-slate-900"}`}>{value}</div>
+    <div className="rounded-2xl bg-[var(--color-raised)] px-2 py-2.5">
+      <div className="label-xs">{label}</div>
+      <div className={`num mt-0.5 font-medium ${bad ? "text-red-700" : "text-slate-900"}`}>{value}</div>
       {sub && <div className={`text-[11px] ${bad ? "text-red-700" : "text-slate-500"}`}>{sub}</div>}
     </div>
   );
@@ -112,7 +112,7 @@ function Metric({ label, value, sub, bad }: { label: string; value: string; sub?
 
 function Row({ c, current, busy, onPick }: { c: CarrierEvaluation; current: boolean; busy: boolean; onPick: () => void }) {
   return (
-    <tr className={`border-b border-slate-100 ${current ? "bg-teal-50/60" : ""}`}>
+    <tr className={`border-b border-[var(--color-line)] transition-colors ${current ? "bg-teal-50" : "hover:bg-slate-50"}`}>
       <td className="py-2 pr-2 font-medium text-slate-900">{carrierLabel(c.carrier)}</td>
       <td className="px-2">{c.totalCost != null ? gbp0(c.totalCost) : `${gbp0(c.carrier.pricePerPallet)}/pallet`}</td>
       <td className="px-2">{c.carrier.transitDays} d</td>
@@ -130,7 +130,7 @@ function Row({ c, current, busy, onPick }: { c: CarrierEvaluation; current: bool
       </td>
       <td className="py-1 text-right">
         {!current && c.eligible !== false && (
-          <button className="text-xs font-medium text-teal-700 hover:underline" disabled={busy} onClick={onPick}>Choose</button>
+          <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={onPick}>Choose</button>
         )}
       </td>
     </tr>

@@ -22,10 +22,10 @@ export function BookingDeck({ initial }: { initial: BookingPayload }) {
               <>Started in chat · <Link className="font-medium text-teal-700 hover:underline" href={`/chat/${data.id}`}>Continue the conversation →</Link></>
             )}
           </div>
-          <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">
-            {b.bookingId} {b.sellerName && <span className="font-normal text-slate-500">· {b.sellerName}</span>}
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900">
+            {b.bookingId} {b.sellerName && <span className="text-slate-600">· {b.sellerName}</span>}
           </h1>
-          <p className="mt-1 text-[15px] text-slate-600">
+          <p className="mt-1 text-sm text-slate-700">
             {b.originCity ?? "?"} → {b.destinationCity ?? "?"}{b.destinationCountry ? `, ${b.destinationCountry}` : ""} · Ready {isoToDisplay(b.readyToShipDate)} · Priority: {b.sellerPriority ?? "not set"}
           </p>
         </div>

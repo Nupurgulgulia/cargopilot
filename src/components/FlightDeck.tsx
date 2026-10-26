@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { RULEBOOK } from "@/lib/constants";
 import { isoToDisplay } from "@/lib/format";
 import type { BookingPayload } from "@/lib/server/payload";
@@ -7,8 +7,10 @@ import type { RuleResult, RuleStatus, Suggestion } from "@/lib/types";
 import { CarrierMatchmaker } from "./CarrierMatchmaker";
 import { Confirmation } from "./Confirmation";
 import { HsSuggest } from "./HsSuggest";
-import { Calc, Check, Download } from "./icons";
-import { READINESS_META, ReadinessIcon, SeverityTag, STATUS_META, StatusIcon } from "./status";
+import { Calc, Check, Download, Truck } from "./icons";
+import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
+import { DepartureBoard } from "./motion/primitives";
+import { READINESS_META, SeverityTag, STATUS_META, StatusIcon } from "./status";
 
 export type Action =
   | { type: "apply"; path: string; value: unknown; ruleId?: string; suggested?: boolean }
@@ -20,6 +22,35 @@ export type Action =
 export type RunAction = (a: Action) => Promise<string | null>;
 
 const WORST: RuleStatus[] = ["fail", "review", "not_evaluable", "pass"];
+// Three-letter code for the boarding-pass route (LEE, ROT…).
+const code = (city: string | null) => (city ? city.slice(0, 3).toUpperCase() : "···");
+const LAMP = { grounded: "text-red-500", attention: "text-amber-500", cleared: "text-emerald-500" } as const;
+const BOARD = { grounded: "text-red-700", attention: "text-amber-700", cleared: "text-emerald-700" } as const;
+const BAR: Record<RuleStatus, string> = { pass: "bg-emerald-500", fail: "bg-red-500", review: "bg-amber-500", not_evaluable: "bg-slate-300" };
+
+/** Ring showing how many of the ten rules pass. */
+function ChecksRing({ passed }: { passed: number }) {
+  const ref = useRef<SVGCircleElement>(null);
+  const C = 2 * Math.PI * 22;
+  useGSAP(() => {
+    if (!ref.current) return;
+    const to = C * (1 - passed / 10);
+    if (reducedMotion()) gsap.set(ref.current, { strokeDashoffset: to });
+    else gsap.to(ref.current, { strokeDashoffset: to, duration: 1.1, ease: "manifest" });
+  }, { dependencies: [passed] });
+  return (
+    <div className="relative h-14 w-14" title={`${passed} of 10 rules pass`}>
+      <svg viewBox="0 0 52 52" className="h-full w-full -rotate-90">
+        <circle cx="26" cy="26" r="22" fill="none" stroke="var(--n-200)" strokeWidth="4" />
+        <circle ref={ref} cx="26" cy="26" r="22" fill="none" stroke="var(--color-signal)" strokeWidth="4" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C} />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+        <span className="num text-sm text-slate-900">{passed}</span>
+        <span className="font-mono text-[9px] text-slate-500">/10</span>
+      </div>
+    </div>
+  );
+}
 
 export function FlightDeck({ data, run, compact = false }: { data: BookingPayload; run: RunAction; compact?: boolean }) {
   const { view } = data;
@@ -40,50 +71,98 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
     { title: "Waiting on details", hint: "These checks run once the details are added", items: open.filter((r) => r.status === "not_evaluable") },
   ];
   const passed = view.results.filter((r) => r.status === "pass");
+  const passedRules = RULEBOOK.filter((r) => ruleStatus(r.id) === "pass").length;
+  const leg = view.carriers.selected ?? view.carriers.recommended;
+  const carrierDays = leg ? `${leg.carrier.transitDays} days · ${leg.carrier.carrier}` : "Road freight";
+  const statusKey = RULEBOOK.map((r) => ruleStatus(r.id)).join();
+
+  // Pre-flight sequence: tick each check in order whenever any result changes; new issue cards slide in.
+  const deck = useRef<HTMLElement>(null);
+  const issues = useRef<HTMLDivElement>(null);
+  useGSAP(
+    () => {
+      if (reducedMotion() || !deck.current) return;
+      const q = gsap.utils.selector(deck.current);
+      gsap.timeline()
+        .fromTo(q("[data-check]"), { opacity: 0.25, y: 4 }, { opacity: 1, y: 0, duration: 0.35, stagger: 0.06, ease: "power2.out" })
+        .fromTo(q("[data-check-bar]"), { scaleX: 0 }, { scaleX: 1, transformOrigin: "left", duration: 0.3, stagger: 0.06, ease: "power2.out" }, 0);
+    },
+    { dependencies: [statusKey] },
+  );
+  useGSAP(
+    () => {
+      if (reducedMotion() || !issues.current) return;
+      gsap.fromTo(issues.current.querySelectorAll("[data-issue]"), { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.45, stagger: 0.05, ease: "manifest", clearProps: "transform" });
+    },
+    { dependencies: [open.map((r) => r.key).join()] },
+  );
 
   return (
     <div className="space-y-4">
-      {/* Status hero */}
-      <section className={`card overflow-hidden border-l-4 ${view.readiness === "grounded" ? "border-l-red-600" : view.readiness === "attention" ? "border-l-amber-500" : "border-l-emerald-600"}`}>
-        <div className="flex flex-wrap items-start justify-between gap-3 p-4">
-          <div>
-            <div className="label-xs">Flight Deck · {b.bookingId ?? "New booking"}</div>
-            <div className="mt-2 flex items-center gap-3">
-              <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${meta.cls}`}>
-                <ReadinessIcon r={view.readiness} />
-              </span>
-              <div>
-                <div className="text-2xl font-semibold tracking-[-0.02em] text-slate-900">{meta.label}</div>
-                <div className="text-sm text-slate-600">{meta.sub}</div>
-              </div>
+      {/* Status hero: a departure board for this booking */}
+      <section ref={deck} className="ticket card overflow-hidden">
+        <div className="flex flex-wrap items-start justify-between gap-4 p-5">
+          <div className="min-w-0">
+            <div className="label-xs">
+              Flight Deck · {b.bookingId ?? "New booking"}{b.originCity && b.destinationCity ? ` · ${b.originCity} → ${b.destinationCity}` : ""}
             </div>
+            <div className="mt-3 flex items-center gap-3">
+              <span className={`live-dot h-2.5 w-2.5 shrink-0 rounded-full ${meta.dot} ${LAMP[view.readiness]}`} />
+              <DepartureBoard text={meta.board} className={`font-mono text-[22px] font-semibold tracking-[0.06em] sm:text-[26px] ${BOARD[view.readiness]}`} />
+            </div>
+            <div className="mt-1.5 text-sm text-slate-500">{meta.sub}</div>
           </div>
-          {!compact && (
-            <a href={`/api/report?booking=${data.id}`} className="btn-ghost text-xs">
-              <Download className="h-4 w-4" /> Download report
-            </a>
-          )}
+          <div className="flex items-center gap-4">
+            <ChecksRing passed={passedRules} />
+            {!compact && (
+              <a href={`/api/report?booking=${data.id}`} className="btn-ghost text-xs">
+                <Download className="h-4 w-4" /> Report
+              </a>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-sm font-medium tabular-nums text-slate-700">
+        {/* Boarding-pass route: origin code, dashed flight arc, destination code */}
+        <div className="flex items-center gap-4 px-5 pb-5">
+          <div className="min-w-0">
+            <div className="text-2xl font-bold tracking-tight text-slate-900">{code(b.originCity)}</div>
+            <div className="truncate text-xs text-slate-500">{b.originCity ?? "Origin"}</div>
+          </div>
+          <div className="relative flex-1">
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="h-10 w-full" aria-hidden>
+              <path d="M4 34 Q100 -14 196 34" fill="none" stroke="var(--n-300)" strokeWidth="1.5" strokeDasharray="4 5" vectorEffect="non-scaling-stroke" />
+            </svg>
+            <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1 rounded-full bg-[var(--color-signal)] p-1.5 text-white">
+              <Truck className="h-3.5 w-3.5" />
+            </span>
+            <div className="absolute inset-x-0 bottom-0 text-center text-[11px] text-slate-500">{carrierDays}</div>
+          </div>
+          <div className="min-w-0 text-right">
+            <div className="text-2xl font-bold tracking-tight text-slate-900">{code(b.destinationCity)}</div>
+            <div className="truncate text-xs text-slate-500">{b.destinationCity ?? "Destination"}</div>
+          </div>
+        </div>
+        <div className="perforation mx-0" />
+        <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-[13px] font-medium text-slate-700">
           <span>{view.summary.headline}</span>
           {b.sellerConfirmedAt && (
-            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[11px] font-semibold text-white">
               <Check className="h-3.5 w-3.5" /> Confirmed by you
             </span>
           )}
         </div>
-        <div className="grid grid-cols-5 gap-px border-t border-slate-100 bg-slate-100 sm:grid-cols-10">
+        <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
             return (
-              <div key={r.id} title={`${r.id} ${r.rule}: ${STATUS_META[s].label}`} className="flex flex-col items-center gap-0.5 bg-white py-2">
+              <li key={r.id} data-check title={`${r.id} ${r.rule}: ${STATUS_META[s].label}`} className="relative flex flex-col items-center gap-1 border-[var(--color-line)] py-3 [&:not(:last-child)]:border-r">
+                <span data-check-bar className={`absolute inset-x-0 top-0 h-[2px] ${BAR[s]}`} />
                 <StatusIcon status={s} severity={r.severity} />
-                <span className="text-[10px] font-semibold text-slate-600">{r.id}</span>
-                <span className={`hidden text-[9px] sm:block ${STATUS_META[s].cls}`}>{STATUS_META[s].label}</span>
-              </div>
+                <span className="font-mono text-[10.5px] text-slate-700">{r.id}</span>
+                <span className="hidden text-center text-[10px] leading-tight text-slate-500 sm:block">{r.short}</span>
+              </li>
             );
           })}
-        </div>
+        </ol>
       </section>
 
       {view.missing.length > 0 && !compact && (
@@ -109,6 +188,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
         </section>
       )}
 
+      <div ref={issues} className="space-y-4">
       {groups.map((g) =>
         g.items.length ? (
           <section key={g.title} className="space-y-2">
@@ -122,6 +202,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
           </section>
         ) : null,
       )}
+      </div>
 
       {passed.length > 0 && (
         <details className="card group p-4">
@@ -196,14 +277,17 @@ function IssueCard({ r, run, compact, description }: { r: RuleResult; run: RunAc
     else setKeeping(false);
   };
 
+  const rail = r.status === "fail" && r.severity === "Red" ? "bg-red-600" : r.status === "not_evaluable" ? "bg-slate-300" : "bg-amber-500";
   const tone =
     r.status === "fail" && r.severity === "Red" ? "border-red-200" : r.status === "not_evaluable" ? "border-slate-200" : "border-amber-200";
 
   return (
-    <article className={`card border ${tone} p-4`}>
+    <article data-issue className={`card relative overflow-hidden rounded-2xl border ${tone} p-4 pl-5`}>
+      <span className={`absolute inset-y-0 left-0 w-1 ${rail}`} />
       <div className="flex flex-wrap items-center gap-2">
         <StatusIcon status={r.status} severity={r.severity} />
-        <span className="font-semibold text-slate-900">{r.ruleId} · {r.title}</span>
+        <span className="num text-xs text-slate-500">{r.ruleId}</span>
+        <span className="font-semibold text-slate-900">{r.title}</span>
         {r.status !== "not_evaluable" && <SeverityTag s={r.severity} />}
         {r.itemLabel && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-700">{r.itemLabel}</span>}
       </div>
