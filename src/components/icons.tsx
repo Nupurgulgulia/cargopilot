@@ -3,7 +3,7 @@ const base = { fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinec
 
 export const Logo = ({ className }: P) => (
   <svg viewBox="0 0 32 32" className={className} aria-hidden>
-    <rect x="1" y="1" width="30" height="30" rx="15" fill="#f47b20" />
+    <rect x="1" y="1" width="30" height="30" rx="15" fill="var(--accent, #f47b20)" />
     <path d="M8 21.5h9.5" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" />
     <path d="M8 10.5h16l-4.5 5.5H8" fill="none" stroke="#ffffff" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
   </svg>

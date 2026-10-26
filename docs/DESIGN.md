@@ -1,6 +1,27 @@
-# CargoPilot design system: "Skyline"
+# CargoPilot design system
 
-This is the approved look for CargoPilot. Keep it in every future build. Change it only when the owner asks for a different design.
+CargoPilot ships with two approved design versions. Both share the same layout, components and motion. Only the tokens differ.
+
+| Version | How to see it | Saved at |
+| --- | --- | --- |
+| **Orange ("Skyline")**, the default | the switch in the nav, or `?theme=orange` | branch `design/skyline-orange`, tag `skyline-orange-v1` |
+| **Dusk** (violet dashboard) | the switch in the nav, or `?theme=dusk` | branch `design/dusk-theme` |
+
+The choice is saved in `localStorage` (`cp-theme`) and applied before first paint (`THEME_BOOT` in `src/lib/theme.ts`). Dusk is defined in `src/app/globals.css` under `[data-theme="dusk"]`. If one version is dropped later, delete its token block and the switch. Keep everything else.
+
+## Dusk at a glance
+
+- **Reference:** Octet's "Interactive dashboards" palette (https://octet.design/colors/palette/interactive-dashboards-color-palette-1731331224/): `#A887CE`, `#7B6E7F`, `#9C526D`, `#4D3E50`, `#292631` and `#171821`.
+- **Surfaces:** a near-black violet canvas (`#171821`) with soft mulberry and lavender glows, and cards in `#211f2a` / `#292631`.
+- **Accent:** pink (`#e46a93`). Tickets (the nav, Flight Deck, recommended carrier and toasts) use a lavender-to-mulberry gradient.
+- **Statuses:** coral red `#ff6b7a`, gold `#f2c45a` and mint `#5dd39e`.
+- **Font:** Plus Jakarta Sans (Orange uses Poppins). JetBrains Mono stays for codes.
+
+---
+
+# Version 1: "Skyline" (Orange)
+
+This was the first approved look. Keep it in every future build. Change it only when the owner asks for a different design.
 
 Reference: Softvence's "Navigating the Skies: Flight Booking Mobile App" on Dribbble
 (https://dribbble.com/shots/23288427-Navigating-the-Skies-Flight-Booking-Mobile-App).

@@ -82,6 +82,8 @@
   --accent: #f47b20;
   --on-accent: #ffffff;
   --shadow: 0 1px 2px rgb(74 40 16 / 0.04), 0 8px 24px -12px rgb(74 40 16 / 0.14);
+  --glow: rgb(244 123 32 / 0.7);
+  --glow-soft: rgb(244 123 32 / 0.08);
 
   --n-50: #fbf7f4; --n-100: #f4eeea; --n-200: #ebe2db; --n-300: #d9cdc4; --n-400: #a89c93;
   --n-500: #847870; --n-600: #655a52; --n-700: #4a413b; --n-800: #342d28; --n-900: #1f1a17;
@@ -152,6 +154,63 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ===================== Theme 2: "Dusk" =====================
+   Dark violet dashboard (Octet "Interactive dashboards" palette: #A887CE, #7B6E7F, #9C526D,
+   #4D3E50, #292631, #171821) with a pink accent and a lavender-to-pink gradient ticket.
+   Switched on by data-theme="dusk" on <html>; Orange ("Skyline") stays the default. */
+:root[data-theme="dusk"],
+[data-theme="dusk"] .paper {
+  color-scheme: dark;
+  --font-ui: var(--font-dusk);
+  --canvas: #171821;
+  --page: #1c1b26;
+  --surface: #211f2a;
+  --surface-2: #292631;
+  --line: #353140;
+  --inverse: #f4f0fa;
+  --on-inverse: #171821;
+  --accent: #e46a93;
+  --on-accent: #ffffff;
+  --glow: rgb(228 106 147 / 0.55);
+  --glow-soft: rgb(168 135 206 / 0.1);
+  --shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 14px 34px -16px rgb(0 0 0 / 0.7);
+
+  --n-50: #26232f; --n-100: #2e2a38; --n-200: #3a3545; --n-300: #4d3e50; --n-400: #7b6e7f;
+  --n-500: #9a8fa0; --n-600: #b5abbc; --n-700: #cfc7d6; --n-800: #e4deea; --n-900: #f7f4fb;
+
+  --a-50: rgb(228 106 147 / 0.12); --a-100: rgb(228 106 147 / 0.2); --a-200: rgb(228 106 147 / 0.4);
+  --a-300: #f29bb8; --a-400: #ec7fa4; --a-500: #e46a93; --a-600: #d2557f; --a-700: #f08db0; --a-800: #f5adc6; --a-900: #fbd3e1;
+
+  --r-50: rgb(255 107 122 / 0.13); --r-100: rgb(255 107 122 / 0.22); --r-200: rgb(255 107 122 / 0.42);
+  --r-500: #ff6b7a; --r-600: #f0505f; --r-700: #ff8f9a; --r-800: #ffb3bb; --r-900: #ffd6da;
+  --y-50: rgb(242 196 90 / 0.13); --y-100: rgb(242 196 90 / 0.22); --y-200: rgb(242 196 90 / 0.42);
+  --y-400: #f2c45a; --y-500: #f2c45a; --y-600: #e0ad3c; --y-700: #f6d27e; --y-800: #f9e0a6; --y-900: #fcefcf;
+  --g-50: rgb(93 211 158 / 0.13); --g-100: rgb(93 211 158 / 0.22); --g-200: rgb(93 211 158 / 0.42);
+  --g-400: #5dd39e; --g-500: #3fc489; --g-600: #2aa873; --g-700: #7ee0b3; --g-800: #a6eaca; --g-900: #cff5e3;
+}
+[data-theme="dusk"] .paper {
+  --page: #1c1b26;
+}
+/* The ticket becomes the lavender-to-mulberry gradient card from the reference. */
+[data-theme="dusk"] .ticket {
+  --page: #171821;
+  --surface: #2c2638;
+  --surface-2: rgb(255 255 255 / 0.07);
+  --line: rgb(255 255 255 / 0.12);
+  --accent: #e46a93;
+  --on-accent: #ffffff;
+  --shadow: 0 18px 40px -18px rgb(156 82 109 / 0.6);
+  --n-50: rgb(255 255 255 / 0.06); --n-100: rgb(255 255 255 / 0.1); --n-200: rgb(255 255 255 / 0.16); --n-300: rgb(255 255 255 / 0.28);
+  --n-400: #a99db6; --n-500: #c3b8cf; --n-600: #d6cde0; --n-700: #e6dfee; --n-800: #f3eff8; --n-900: #ffffff;
+  background: linear-gradient(135deg, #3a3150 0%, #4d3e50 45%, #6a3c5c 100%);
+}
+:root[data-theme="dusk"] body {
+  background:
+    radial-gradient(700px 420px at 8% -80px, rgb(156 82 109 / 0.32), transparent 70%),
+    radial-gradient(800px 480px at 100% 0, rgb(168 135 206 / 0.18), transparent 70%),
+    var(--canvas);
+}
+
 /* The sky: orange behind the header, fading through peach into the warm canvas. */
 body {
   background:
@@ -163,7 +222,7 @@ body {
 }
 
 ::selection {
-  background: rgb(244 123 32 / 0.25);
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
 }
 
 :focus-visible {
@@ -188,7 +247,7 @@ body {
 /* The one accent action per view (orange) */
 @utility btn-dark {
   @apply btn bg-[var(--color-signal)] text-[var(--color-on-signal)] hover:brightness-105;
-  box-shadow: 0 8px 18px -8px rgb(244 123 32 / 0.7);
+  box-shadow: 0 8px 18px -8px var(--glow);
 }
 @utility btn-ghost {
   @apply btn border border-[var(--color-line)] bg-[var(--color-card)] text-slate-800 hover:border-teal-300 hover:text-teal-700;
@@ -280,7 +339,7 @@ body {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.3s;
-  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgb(244 123 32 / 0.08), transparent 60%);
+  background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), var(--glow-soft), transparent 60%);
 }
 .spotlight:hover::before {
   opacity: 1;
