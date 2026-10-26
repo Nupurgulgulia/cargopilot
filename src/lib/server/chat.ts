@@ -10,6 +10,7 @@ import { nextFutureAnniversary } from "../rules";
 import type { Booking, BookingView, Item, MissingField } from "../types";
 import { buildView } from "../view";
 import { gemini } from "./gemini";
+import { suggestHs } from "./hsSuggest";
 
 // ---------------- Extraction ----------------
 
@@ -108,6 +109,7 @@ Rules:
 - cartons: item.cartons is cartons of that product. booking.cartons is the shipment's total. If the shipment has (or will have) exactly one product and the seller states a carton count, set both.
 - Items: a product line. For a NEW product, omit "ref". To change an existing product, set "ref" to its number in the state list. countryOfOrigin must be one of: ${ITEM_ORIGIN_COUNTRIES.join(", ")} (where it was made, not where it ships from).
 - readyToShipDate as DD-MM-YYYY; resolve relative dates ("next Monday", "tomorrow") using today's date given in the state.
+- If an item in the state has "suggestedHsCode" and the seller accepts it ("yes", "use that", "use the suggested code"), return that item's hsCode = suggestedHsCode (with its ref).
 - If the state has "pastDateAwaitingConfirmation", the seller was asked about a past date. If they accept the suggested date ("yes", "that's right", "the 2026 one"), return readyToShipDate = the suggested date. If they explicitly want to keep the past date, return readyToShipDate = that past date and keepPastDate: true. If they give a different date, return that date.
 - If the seller says they don't know / don't have a value, list its path in unknownFields, e.g. "booking.grossWeightKg" or "items.1.hsCode" (1-based item number).
 - hazardAnswers: when the seller confirms whether a flagged item contains a lithium battery, aerosol or flammable liquid.
@@ -125,7 +127,12 @@ export function stateForPrompt(b: Booking, items: Item[]) {
       sellerPriority: b.sellerPriority, pallets: b.pallets, cartons: b.cartons, declaredValueGBP: b.declaredValue,
       grossWeightKg: b.grossWeightKg, deliveryAppointmentBooked: b.deliveryAppointmentBooked,
     },
-    items: items.map((it, i) => ({ number: i + 1, ...it, sourceRow: undefined })),
+    items: items.map((it, i) => ({
+      number: i + 1,
+      ...it,
+      sourceRow: undefined,
+      ...(b.hsSuggested?.[String(i)] && !it.hsCode ? { suggestedHsCode: b.hsSuggested[String(i)].code } : {}),
+    })),
     ...(b.pendingReadyDate
       ? {
           pastDateAwaitingConfirmation: {
@@ -295,6 +302,7 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - Briefly acknowledge what changed (if anything). If a change affected checks or the carrier, say so in one line.
 - If anything was rejected, explain why in one line and ask again.
 - If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later). Never say it doesn't matter.
+- If "hsSuggestions" is non-empty, when you ask for those HS codes offer each suggested code with its short description (e.g. "Suggested HS code for cotton tote bags: 420292 (cases and containers). Reply yes to use it, or tap Suggest in the booking panel for alternatives."). Never invent other codes.
 - If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was NOT saved. Say so plainly (it is N days in the past), ask whether they meant the suggested date, or want to keep the past date anyway, or want a different date. Do this right after the acknowledgement and before asking for anything else.
 - If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
@@ -303,7 +311,12 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - Never say the shipment is booked with a carrier or cleared by customs. A confirmed booking is "prepared and confirmed by you; the next step is to hand it to the carrier".
 - Never use em dashes (—). Use commas, full stops or colons instead.`;
 
+/** Shorten at a word boundary so text never ends mid-word. */
+export const clip = (text: string, max: number) =>
+  text.length <= max ? text : `${text.slice(0, max).replace(/[\s,;:(]+\S*$/, "")}…`;
+
 export function factsForReply(applied: Applied, view: BookingView, clarify: string[]) {
+  const hsSuggested = view.booking.hsSuggested ?? {};
   // While a past date waits for confirmation, don't also ask for the date as if nothing was given.
   const pending = view.booking.pendingReadyDate;
   const missing = orderMissing(view.missing).filter((m) => !(pending && m.path === "booking.readyToShipDate"));
@@ -324,6 +337,10 @@ export function factsForReply(applied: Applied, view: BookingView, clarify: stri
     rejected: applied.rejected,
     unknownNow: applied.unknown,
     clarify,
+    hsSuggestions: view.items.flatMap((it, i) => {
+      const h = hsSuggested[String(i)];
+      return h && !it.hsCode ? [{ item: it.description ?? it.sku ?? `Item ${i + 1}`, code: h.code, officialText: clip(h.description, 110) }] : [];
+    }),
     heldDate: applied.held
       ? {
           date: isoToDisplay(applied.held.value),
@@ -416,6 +433,17 @@ export async function runChatTurn(
   }
 
   const applied = applyExtraction(booking, items, ex);
+  // About to ask for HS codes? Look up a suggestion first (cached, real HS 2022 codes only) so the seller can just say yes.
+  const asking = orderMissing(buildView(applied.booking, applied.items).missing).slice(0, 4);
+  const hsSuggested = { ...(applied.booking.hsSuggested ?? {}) };
+  for (const m of asking.filter((x) => x.path.endsWith(".hsCode")).slice(0, 2)) {
+    const i = Number(m.path.split(".")[1]);
+    const desc = applied.items[i]?.description;
+    if (!desc || hsSuggested[String(i)] || elapsed() > 25_000) continue;
+    const top = (await suggestHs(desc).catch(() => []))[0];
+    if (top) hsSuggested[String(i)] = { code: top.code, description: top.description };
+  }
+  applied.booking = { ...applied.booking, hsSuggested };
   const view = buildView(applied.booking, applied.items);
   const facts = factsForReply(applied, view, ex.clarify ?? []);
 

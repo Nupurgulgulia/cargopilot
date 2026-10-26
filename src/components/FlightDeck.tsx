@@ -6,6 +6,7 @@ import type { BookingPayload } from "@/lib/server/payload";
 import type { RuleResult, RuleStatus, Suggestion } from "@/lib/types";
 import { CarrierMatchmaker } from "./CarrierMatchmaker";
 import { Confirmation } from "./Confirmation";
+import { HsSuggest } from "./HsSuggest";
 import { Calc, Check, Download } from "./icons";
 import { READINESS_META, ReadinessIcon, SeverityTag, STATUS_META, StatusIcon } from "./status";
 
@@ -115,7 +116,9 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
               <h3 className="text-sm font-semibold text-slate-900">{g.title} ({g.items.length})</h3>
               <span className="text-xs text-slate-500">{g.hint}</span>
             </div>
-            {g.items.map((r) => <IssueCard key={r.key} r={r} run={run} compact={compact} />)}
+            {g.items.map((r) => (
+              <IssueCard key={r.key} r={r} run={run} compact={compact} description={r.itemIndex != null ? view.items[r.itemIndex]?.description ?? null : null} />
+            ))}
           </section>
         ) : null,
       )}
@@ -174,7 +177,7 @@ function fmt(v: unknown) {
   return String(v);
 }
 
-function IssueCard({ r, run, compact }: { r: RuleResult; run: RunAction; compact: boolean }) {
+function IssueCard({ r, run, compact, description }: { r: RuleResult; run: RunAction; compact: boolean; description: string | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [keeping, setKeeping] = useState(false);
@@ -256,6 +259,14 @@ function IssueCard({ r, run, compact }: { r: RuleResult; run: RunAction; compact
             )}
           </div>
         )
+      )}
+      {r.ruleId === "R-01" && r.itemIndex != null && !r.keptReason && (
+        <div className="mt-3 border-t border-slate-100 pt-3">
+          <HsSuggest
+            description={description}
+            onPick={(code) => run({ type: "apply", path: `items.${r.itemIndex}.hsCode`, value: code, ruleId: "R-01", suggested: true })}
+          />
+        </div>
       )}
       {err && <p className="mt-2 text-xs text-red-700">{err}</p>}
     </article>

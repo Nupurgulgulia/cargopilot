@@ -29,7 +29,7 @@ export function BookingDeck({ initial }: { initial: BookingPayload }) {
           </p>
         </div>
       </div>
-      <BookingSummary view={data.view} highlight={new Set()} />
+      <BookingSummary view={data.view} highlight={new Set()} run={run} />
       {data.source === "upload" && data.original && <OriginalNote />}
       <FlightDeck data={data} run={run} />
     </div>

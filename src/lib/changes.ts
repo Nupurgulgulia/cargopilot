@@ -135,6 +135,7 @@ export function applyChange(booking: Booking, items: Item[], path: string, value
       const old = its[i];
       its = its.filter((_, j) => j !== i);
       b.hazardConfirmations = reindex(b.hazardConfirmations, i, (k) => [Number(k), (n) => String(n)]);
+      b.hsSuggested = reindex(b.hsSuggested, i, (k) => [Number(k), (n) => String(n)]);
       b.keptOriginal = reindex(b.keptOriginal, i, (k) => {
         const m = k.match(/^(R-\d+):item:(\d+)$/);
         return m ? [Number(m[2]), (n) => `${m[1]}:item:${n}`] : null;
@@ -152,7 +153,11 @@ export function applyChange(booking: Booking, items: Item[], path: string, value
     const old = its[i][field];
     (its[i] as unknown as Record<string, unknown>)[field] = v;
     if (field === "description") {
-      // A new description needs a fresh restricted-goods answer.
+      // A new description needs a fresh HS suggestion and restricted-goods answer.
+      if (b.hsSuggested?.[String(i)]) {
+        b.hsSuggested = { ...b.hsSuggested };
+        delete b.hsSuggested[String(i)];
+      }
       if (b.hazardConfirmations?.[String(i)]) {
         b.hazardConfirmations = { ...b.hazardConfirmations };
         delete b.hazardConfirmations[String(i)];

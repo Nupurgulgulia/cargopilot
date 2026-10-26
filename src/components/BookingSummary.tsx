@@ -1,10 +1,14 @@
 "use client";
+import { Fragment, useState } from "react";
 import { gbp0, isoToDisplay, kg, num } from "@/lib/format";
 import type { BookingView } from "@/lib/types";
+import type { RunAction } from "./FlightDeck";
+import { HsSuggest } from "./HsSuggest";
 
 // Live structured view of what the chat has collected so far.
-export function BookingSummary({ view, highlight }: { view: BookingView; highlight: Set<string> }) {
+export function BookingSummary({ view, highlight, run }: { view: BookingView; highlight: Set<string>; run?: RunAction }) {
   const b = view.booking;
+  const [hsOpen, setHsOpen] = useState<number | null>(null);
   const missing = new Set(view.missing.map((m) => m.path));
   const skipped = new Set(b.skippedFields ?? []);
 
@@ -67,10 +71,22 @@ export function BookingSummary({ view, highlight }: { view: BookingView; highlig
                     {v ?? (skipped.has(`items.${i}.${f}`) ? "unknown" : missing.has(`items.${i}.${f}`) ? "needed" : "Not set")}
                   </td>
                 );
+                // A missing or too-short HS code gets a "Suggest" link that opens suggestions under the row.
+                const hsNeeded = (it.hsCode ?? "").replace(/D/g, "").length < 6;
                 return (
-                  <tr key={i} className="border-t border-slate-100">
+                  <Fragment key={i}>
+                  <tr className="border-t border-slate-100">
                     {cell("description", it.description ? `${it.sku ? `${it.sku} · ` : ""}${it.description}` : null)}
-                    {cell("hsCode", it.hsCode)}
+                    {run && hsNeeded && it.description ? (
+                      <td className="px-1 py-1">
+                        <span className={it.hsCode ? "text-slate-900" : "italic text-amber-700"}>{it.hsCode ?? "needed"}</span>{" "}
+                        <button type="button" className="font-medium text-teal-700 hover:underline" onClick={() => setHsOpen(hsOpen === i ? null : i)}>
+                          {hsOpen === i ? "Hide" : "Suggest"}
+                        </button>
+                      </td>
+                    ) : (
+                      cell("hsCode", it.hsCode)
+                    )}
                     {cell("quantity", it.quantity != null ? num(it.quantity) : null)}
                     {cell("unitPrice", it.unitPrice != null ? gbp0(it.unitPrice) : null)}
                     {cell("unitsPerCarton", it.unitsPerCarton != null ? num(it.unitsPerCarton) : null)}
@@ -78,6 +94,24 @@ export function BookingSummary({ view, highlight }: { view: BookingView; highlig
                     {cell("unitWeightKg", it.unitWeightKg != null ? num(it.unitWeightKg, 3) : null)}
                     {cell("countryOfOrigin", it.countryOfOrigin)}
                   </tr>
+                  {run && hsOpen === i && (
+                    <tr>
+                      <td colSpan={8} className="bg-slate-50 px-2 py-2">
+                        <HsSuggest
+                          key={it.description ?? ""}
+                          autoLoad
+                          description={it.description}
+                          current={it.hsCode}
+                          onPick={async (code) => {
+                            const err = await run({ type: "apply", path: `items.${i}.hsCode`, value: code, ruleId: "R-01", suggested: true });
+                            if (!err) setHsOpen(null);
+                            return err;
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>

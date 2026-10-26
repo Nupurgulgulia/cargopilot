@@ -1,10 +1,13 @@
 import "server-only";
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import { cookies } from "next/headers";
 import { buildView } from "../view";
 import type { Booking, BookingView, Item } from "../types";
 
-export const sql = neon(process.env.DATABASE_URL!);
+// Created on first query, so importing server modules (e.g. in tests) never needs a database URL.
+let client: NeonQueryFunction<false, false> | null = null;
+export const sql = ((strings: TemplateStringsArray, ...values: unknown[]) =>
+  (client ??= neon(process.env.DATABASE_URL!))(strings, ...values)) as NeonQueryFunction<false, false>;
 
 export const SESSION_COOKIE = "cp_sid";
 

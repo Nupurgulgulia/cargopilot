@@ -125,7 +125,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
       <div className="space-y-4">
         {data ? (
           <>
-            <BookingSummary view={data.view} highlight={highlight} />
+            <BookingSummary view={data.view} highlight={highlight} run={run} />
             <FlightDeck data={data} run={run} compact />
             <div className="text-right">
               <Link href={`/booking/${data.id}`} className="text-sm font-medium text-teal-700 hover:underline">Open full Flight Deck & report →</Link>
