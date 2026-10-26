@@ -6,7 +6,7 @@ import type { BookingPayload } from "@/lib/server/payload";
 import type { RuleResult, RuleStatus, Suggestion } from "@/lib/types";
 import { CarrierMatchmaker } from "./CarrierMatchmaker";
 import { Confirmation } from "./Confirmation";
-import { Calc, Download } from "./icons";
+import { Calc, Check, Download } from "./icons";
 import { READINESS_META, ReadinessIcon, SeverityTag, STATUS_META, StatusIcon } from "./status";
 
 export type Action =
@@ -62,7 +62,14 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
             </a>
           )}
         </div>
-        <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-sm font-medium tabular-nums text-slate-700">{view.summary.headline}</div>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/70 px-4 py-2.5 text-sm font-medium tabular-nums text-slate-700">
+          <span>{view.summary.headline}</span>
+          {b.sellerConfirmedAt && (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+              <Check className="h-3.5 w-3.5" /> Confirmed by you
+            </span>
+          )}
+        </div>
         <div className="grid grid-cols-5 gap-px border-t border-slate-100 bg-slate-100 sm:grid-cols-10">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);

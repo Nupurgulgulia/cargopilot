@@ -28,26 +28,32 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
     ["Delivery slot", b.destinationType === "Warehouse" ? (b.deliveryAppointmentBooked ? "Booked" : "Not booked yet") : "Not needed (business address)"],
   ];
 
+  const confirmedAt = b.sellerConfirmedAt
+    ? new Date(b.sellerConfirmedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })
+    : null;
+  const blockedReason =
+    view.readiness === "grounded"
+      ? "Fix the critical (Red) issues above before you can confirm."
+      : view.missing.length
+        ? "Add the missing details before you can confirm."
+        : null;
+
   return (
     <section className="card p-4">
-      <h3 className="font-semibold text-slate-900">Booking confirmation & next steps</h3>
-      {b.sellerConfirmedAt ? (
-        <div className="mt-2 flex items-start gap-2 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">
-          <Check className="mt-0.5 h-4 w-4 shrink-0" />
-          <div>
-            <b>Confirmed by you</b> on {new Date(b.sellerConfirmedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}. Your booking is
-            prepared, but CargoPilot has not sent it to the carrier or customs. Follow the steps below to hand it over.
-          </div>
-        </div>
-      ) : (
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="font-semibold text-slate-900">Booking confirmation & next steps</h3>
+        {confirmedAt && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+            <Check className="h-3.5 w-3.5" /> Confirmed
+          </span>
+        )}
+      </div>
+      {!confirmedAt && (
         <p className="mt-1 text-sm text-slate-600">
-          {view.readiness === "grounded"
-            ? "This booking can't be confirmed until the Red issues are fixed."
-            : view.missing.length
-              ? "A few details are still missing before you can confirm."
-              : view.readiness === "attention"
-                ? "No blocking issues. You can confirm now, and any warnings stay on record."
-                : "Everything checks out. Review the summary and confirm."}
+          {blockedReason ??
+            (view.readiness === "attention"
+              ? "No blocking issues. You can confirm now, and any warnings stay on record."
+              : "Everything checks out. Review the summary below and confirm.")}
         </p>
       )}
 
@@ -65,7 +71,21 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
         {view.nextSteps.map((s, i) => <li key={i}>{s}</li>)}
       </ol>
 
-      {!b.sellerConfirmedAt && (
+      {/* The result appears where the button was, so it is never off-screen. */}
+      {confirmedAt ? (
+        <div role="status" className="mt-4 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+            <Check className="h-3.5 w-3.5" />
+          </span>
+          <div>
+            <div className="font-semibold">Booking confirmed on {confirmedAt}</div>
+            <p className="mt-0.5 text-emerald-800">
+              Your booking is prepared. CargoPilot has not sent it to the carrier or customs, so follow the steps above to hand it over.
+              If you change any detail, you&apos;ll be asked to confirm again.
+            </p>
+          </div>
+        </div>
+      ) : (
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <button
             className="btn-primary"
@@ -76,9 +96,11 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
               setBusy(false);
             }}
           >
-            <Check className="h-4 w-4" /> Confirm booking details
+            <Check className="h-4 w-4" /> {busy ? "Confirming…" : "Confirm booking details"}
           </button>
-          <span className="text-xs text-slate-500">Confirming prepares the booking. It doesn&apos;t book the carrier or clear customs.</span>
+          <span className="text-xs text-slate-500">
+            {blockedReason ?? "Confirming prepares the booking. It doesn't book the carrier or clear customs."}
+          </span>
         </div>
       )}
       {err && <p className="mt-2 text-xs text-red-700">{err}</p>}
