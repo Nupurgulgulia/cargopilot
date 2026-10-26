@@ -339,8 +339,8 @@ export async function runChatTurn(
   let ex: Extraction = {};
   let aiError: string | undefined;
   try {
-    const extract = async (extra = "") => {
-      const raw = await gemini({ system: EXTRACT_SYSTEM, prompt: prompt + extra, json: EXTRACTION_SCHEMA, timeoutMs: 20000 });
+    const extract = async (extra = "", timeoutMs = 25_000) => {
+      const raw = await gemini({ system: EXTRACT_SYSTEM, prompt: prompt + extra, json: EXTRACTION_SCHEMA, timeoutMs });
       const parsed = Extraction.safeParse(safeJson(raw));
       if (!parsed.success) console.error("extraction invalid", parsed.error.issues.slice(0, 3), raw.slice(0, 500));
       return parsed.success ? parsed.data : null;
@@ -350,9 +350,14 @@ export async function runChatTurn(
     const missed = first ? missingNumbers(message, first) : [];
     // Time budget: Vercel stops functions at 60s, so the second pass only runs if there is room.
     if ((!first || missed.length) && elapsed() < 20000) {
+      // A failed double-check must never throw away a good first reading.
       const second = await extract(
         first ? `\n\nYour previous extraction missed these values from the message: ${missed.join(", ")}. Include every stated value.` : "\n\nReturn valid JSON only.",
-      );
+        15_000,
+      ).catch((e) => {
+        console.warn("second extraction pass failed", String((e as Error)?.message ?? e).slice(0, 200));
+        return null;
+      });
       first = first && second ? mergeExtractions(first, second) : (first ?? second);
     }
     if (first) ex = first;
