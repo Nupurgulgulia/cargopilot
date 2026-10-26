@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JetBrains_Mono, Plus_Jakarta_Sans, Poppins } from "next/font/google";
 import Link from "next/link";
 import { NavLinks } from "@/components/NavLinks";
+import { HtmlFlags } from "@/components/HtmlFlags";
 import { ThemeSwitch } from "@/components/ThemeSwitch";
 import { THEME_BOOT } from "@/lib/theme";
 import { Logo } from "@/components/icons";
@@ -52,6 +53,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <CommandPalette />
         <Toaster />
         <SpotlightTracker />
+        <HtmlFlags />
       </body>
     </html>
   );

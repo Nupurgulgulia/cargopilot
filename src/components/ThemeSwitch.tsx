@@ -12,6 +12,7 @@ export function ThemeSwitch() {
   const toggle = () => {
     const next: Theme = dark ? "orange" : "dusk";
     setTheme(next);
+    (window as { __cpTheme?: string }).__cpTheme = next;
     if (next === "dusk") document.documentElement.dataset.theme = "dusk";
     else delete document.documentElement.dataset.theme;
     try {
