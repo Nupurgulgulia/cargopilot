@@ -1,7 +1,7 @@
 // Turns the raw rows of the uploaded Bookings and Items sheets into the shared
 // data model. Bad values are reported, never silently turned into 0.
 import {
-  DESTINATION_COUNTRIES, DESTINATION_TYPES, DESTINATION_CITIES, ITEM_ORIGIN_COUNTRIES, ORIGIN_CITIES, SELLER_PRIORITIES,
+  ORIGIN_COUNTRY, DESTINATION_COUNTRIES, DESTINATION_TYPES, DESTINATION_CITIES, ITEM_ORIGIN_COUNTRIES, ORIGIN_CITIES, SELLER_PRIORITIES,
   countryForCity,
 } from "./constants";
 import { parseDate } from "./format";
@@ -215,7 +215,8 @@ export function importWorkbook(sheets: Record<string, SheetRows>): ImportResult 
       bookingId: id,
       sellerName: text(get(row, bMap.map, "sellerName")),
       originCity: oneOf(get(row, bMap.map, "originCity"), ORIGIN_CITIES, "Origin city", "booking.originCity", ctx),
-      originCountry: text(get(row, bMap.map, "originCountry")) ?? "United Kingdom",
+      // Blank means UK (every shipment starts there); any casing of "United Kingdom" is accepted; anything else is kept so it gets flagged.
+      originCountry: ((v) => (v == null || norm(v) === norm(ORIGIN_COUNTRY) ? ORIGIN_COUNTRY : v))(text(get(row, bMap.map, "originCountry"))),
       destinationCity: destCity,
       destinationCountry:
         oneOf(get(row, bMap.map, "destinationCountry"), DESTINATION_COUNTRIES, "Destination country", "booking.destinationCountry", ctx) ??

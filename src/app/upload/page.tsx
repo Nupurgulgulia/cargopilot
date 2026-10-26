@@ -10,30 +10,39 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [drag, setDrag] = useState(false);
 
-  async function handle(file: File) {
+  // Accepts one workbook, or the Bookings and Items sheets as separate files (.xlsx or .csv).
+  async function handle(list: FileList | File[]) {
     setError(null);
-    if (!/\.(xlsx|xlsm|xls)$/i.test(file.name)) {
-      setError("Please upload an Excel workbook (.xlsx) in the Case 2 template format.");
+    const files = [...list];
+    const bad = files.find((f) => !/.(xlsx|xlsm|xls|csv)$/i.test(f.name));
+    if (files.length === 0) return;
+    if (bad) {
+      setError(`"${bad.name}" isn't a spreadsheet. Upload an Excel workbook (.xlsx) or the Bookings and Items sheets as .xlsx or .csv files.`);
       return;
     }
     setBusy(true);
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
-      // Keep a copy of the original file so the updated workbook can be rebuilt from it (up to 3 MB).
-      const fileBase64 = buf.byteLength <= 3_000_000 ? toBase64(buf) : undefined;
-      // Only send the sheets we need; Carrier options and Rulebook are fixed in the app.
       const sheets: Record<string, unknown[][]> = {};
-      for (const name of wb.SheetNames) {
-        const n = name.toLowerCase();
-        if (n.includes("carrier") || n.includes("rule") || n.includes("glossary") || n.includes("allowed") || n.includes("guide")) continue;
-        const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[name], { header: 1, raw: true, defval: null, blankrows: false });
-        sheets[name] = rows.slice(0, 5000).map((r) => r.slice(0, 40));
+      let fileBase64: string | undefined;
+      for (const file of files) {
+        const isCsv = /.csv$/i.test(file.name);
+        // CSV values stay as text so HS codes keep leading zeros; the server parses numbers itself.
+        const wb = isCsv ? XLSX.read(await file.text(), { type: "string", raw: true }) : XLSX.read(await file.arrayBuffer());
+        // Keep a copy of a single uploaded workbook so the updated workbook can be rebuilt from it (up to 3 MB).
+        if (files.length === 1 && !isCsv && file.size <= 3_000_000) fileBase64 = toBase64(await file.arrayBuffer());
+        for (const name of wb.SheetNames) {
+          const n = name.toLowerCase();
+          // Carrier options and Rulebook are fixed in the app; only the Bookings and Items sheets are read.
+          if (n.includes("carrier") || n.includes("rule") || n.includes("glossary") || n.includes("allowed") || n.includes("guide")) continue;
+          const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[name], { header: 1, raw: true, defval: null, blankrows: false });
+          // With several files, prefix the file name so "Sheet1" in two files can't collide (and "bookings.csv" is recognised).
+          sheets[files.length > 1 || isCsv ? `${file.name} / ${name}` : name] = rows.slice(0, 5000).map((r) => r.slice(0, 40));
+        }
       }
       const res = await fetch("/api/audit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileName: file.name, sheets, fileBase64 }),
+        body: JSON.stringify({ fileName: files.map((f) => f.name).join(" + ").slice(0, 255), sheets, fileBase64 }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Upload failed.");
@@ -56,7 +65,7 @@ export default function UploadPage() {
       <label
         onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
         onDragLeave={() => setDrag(false)}
-        onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handle(f); }}
+        onDrop={(e) => { e.preventDefault(); setDrag(false); handle(e.dataTransfer.files); }}
         className={`mt-8 flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed px-6 py-14 text-center shadow-sm transition ${drag ? "border-teal-600 bg-teal-50/60" : "border-slate-200 bg-white hover:border-teal-500 hover:bg-teal-50/20"}`}
       >
         <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-teal-50 ring-8 ring-teal-50/50">
@@ -67,10 +76,10 @@ export default function UploadPage() {
         ) : (
           <>
             <div className="text-base font-medium text-slate-900">Drop your workbook here, or browse</div>
-            <div className="text-xs text-slate-500">.xlsx in the Case 2 format · Bookings and Items sheets · dates as DD-MM-YYYY · GBP</div>
+            <div className="text-xs text-slate-500">One workbook, or the Bookings and Items sheets as separate .xlsx or .csv files · dates as DD-MM-YYYY · GBP</div>
           </>
         )}
-        <input type="file" accept=".xlsx,.xlsm,.xls" className="hidden" disabled={busy} onChange={(e) => { const f = e.target.files?.[0]; if (f) handle(f); e.target.value = ""; }} />
+        <input type="file" multiple accept=".xlsx,.xlsm,.xls,.csv" className="hidden" disabled={busy} onChange={(e) => { if (e.target.files) handle(e.target.files); e.target.value = ""; }} />
       </label>
       {error && <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 

@@ -3,6 +3,46 @@ import { applyExtraction, emptyBooking, Extraction, factsForReply, mergeExtracti
 import { nextFutureAnniversary } from "@/lib/rules";
 import { buildView } from "@/lib/view";
 
+describe("confirming in chat", () => {
+  it("restates the booking and lists what happens next", () => {
+    const b = applyExtraction(emptyBooking(), [], {
+      booking: { sellerName: "Potter & Co", originCity: "Birmingham", destinationCity: "Hamburg", destinationType: "Business address", readyToShipDate: "20-11-2030", sellerPriority: "Cheapest", pallets: 2, cartons: 50, declaredValue: 3600, grossWeightKg: 400, deliveryAppointmentBooked: false },
+      items: [{ sku: "MUG-1", description: "Ceramic mug", hsCode: "691200", quantity: 800, unitPrice: 4.5, unitsPerCarton: 16, cartons: 50, unitWeightKg: 0.4, countryOfOrigin: "China" }],
+    });
+    const confirmed = applyExtraction(b.booking, b.items, { confirmBooking: true });
+    const facts = factsForReply(confirmed, buildView(confirmed.booking, confirmed.items), []);
+    expect(facts.justConfirmed?.summary).toEqual(expect.arrayContaining([
+      "Route: Birmingham, UK to Hamburg, Germany (Business address)",
+      "Carrier: Carrier A · Road economy, estimated £360",
+    ]));
+    expect(facts.justConfirmed?.nextSteps.length).toBeGreaterThan(2);
+  });
+});
+
+describe("mid-conversation edits", () => {
+  const complete = applyExtraction(emptyBooking(), [], {
+    booking: { sellerName: "Potter & Co", originCity: "Birmingham", destinationCity: "Hamburg", destinationType: "Warehouse", readyToShipDate: "20-11-2030", sellerPriority: "Cheapest", pallets: 3, cartons: 50, declaredValue: 3600, grossWeightKg: 400, deliveryAppointmentBooked: true },
+    items: [{ sku: "MUG-1", description: "Ceramic mug", hsCode: "691200", quantity: 800, unitPrice: 4.5, unitsPerCarton: 16, cartons: 50, unitWeightKg: 0.4, countryOfOrigin: "China" }],
+  }).booking;
+  const items = [{ sku: "MUG-1", description: "Ceramic mug", hsCode: "691200", quantity: 800, unitPrice: 4.5, unitsPerCarton: 16, cartons: 50, unitWeightKg: 0.4, countryOfOrigin: "China" }];
+
+  it("'add a pallet' reports the re-run pallet-weight check, and only reminds about addresses in one line", () => {
+    const before = buildView(complete, items);
+    const applied = applyExtraction(complete, items, { booking: { pallets: 4 } });
+    const facts = factsForReply(applied, buildView(applied.booking, applied.items), [], { before });
+    expect(facts.rechecked.some((r) => r.startsWith("R-05 Pallet weight passes: 100 kg per pallet"))).toBe(true);
+    expect(facts.askAddresses).toEqual([]);
+    expect(facts.addressesStillNeeded).toBe(true);
+  });
+
+  it("asks for the full addresses once, when the booking first becomes complete", () => {
+    const partial = { ...complete, deliveryAppointmentBooked: null };
+    const applied = applyExtraction(partial, items, { booking: { deliveryAppointmentBooked: true } });
+    const facts = factsForReply(applied, buildView(applied.booking, applied.items), [], { before: buildView(partial, items) });
+    expect(facts.askAddresses).toHaveLength(12);
+  });
+});
+
 describe("past ready-to-ship date", () => {
   it("suggests the same day in the next year that is still ahead", () => {
     expect(nextFutureAnniversary("2025-10-22", "2026-10-26")).toBe("2027-10-22");

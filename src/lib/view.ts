@@ -133,9 +133,9 @@ function buildNextSteps(
   const reviews = results.filter((r) => r.status === "review");
   if (missingCount) steps.push(`Provide the ${plural(missingCount, "missing detail")} so every check can run.`);
   if (dataErrors) steps.push(`Correct the ${plural(dataErrors, "data error")} in the booking.`);
-  if (reds.length) steps.push(`Fix the ${plural(reds.length, "critical issue")} (${[...new Set(reds.map((r) => r.ruleId))].join(", ")}). The shipment can't leave until these are resolved.`);
+  if (reds.length) steps.push(`Fix the ${plural(reds.length, "critical issue")} (${[...new Set(reds.map((r) => r.ruleId))].join(", ")}). The shipment can't leave until ${reds.length === 1 ? "it is" : "they are"} resolved.`);
   if (reviews.length) steps.push(`Confirm the ${plural(reviews.length, "flagged item")} for restricted goods.`);
-  if (ambers.length) steps.push(`Review the ${plural(ambers.length, "warning")} (${[...new Set(ambers.map((r) => r.ruleId))].join(", ")}). Fix them, or add a note saying why they're fine.`);
+  if (ambers.length) steps.push(`Review the ${plural(ambers.length, "warning")} (${[...new Set(ambers.map((r) => r.ruleId))].join(", ")}). Fix ${ambers.length === 1 ? "it, or add a note saying why it's" : "them, or add a note saying why they're"} fine.`);
 
   const carrier = rec.selected && rec.selected.eligible !== false ? rec.selected : rec.recommended;
   if (b.destinationType === "Warehouse" && !b.deliveryAppointmentBooked)

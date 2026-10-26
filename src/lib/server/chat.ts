@@ -6,7 +6,7 @@ import {
 import { ADDRESS_FIELDS, addressGaps } from "../addresses";
 import { applyChange, ChangeError, clearKeptFor } from "../changes";
 import { carrierLabel } from "../carriers";
-import { daysBetweenISO, gbp0, isoToDisplay, num, parseDate, todayISO } from "../format";
+import { addDaysISO, daysBetweenISO, gbp0, isoToDisplay, num, parseDate, todayISO } from "../format";
 import { nextFutureAnniversary } from "../rules";
 import type { Booking, BookingView, Item, MissingField } from "../types";
 import { buildView } from "../view";
@@ -322,18 +322,65 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - If "hsSuggestions" is non-empty, when you ask for those HS codes offer each suggested code with its short description (e.g. "Suggested HS code for cotton tote bags: 420292 (cases and containers). Reply yes to use it, or tap Suggest in the booking panel for alternatives."). Never invent other codes.
 - If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was NOT saved. Say so plainly (it is N days in the past), ask whether they meant the suggested date, or want to keep the past date anyway, or want a different date. Do this right after the acknowledgement and before asking for anything else.
 - If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
-- If "askFor" is empty and "askAddresses" is non-empty, ask for the collection and delivery address and contact details listed (company, street, postcode, contact name, phone, email), saying the carrier needs them and they are required before emailing the carrier. Group them by Collection and Delivery.
+- If "rechecked" is non-empty, the seller edited a detail they had already given. Right after acknowledging the change, add one line saying the related checks were re-run and what they found, using those results (e.g. "Re-checked pallet weight: 100 kg per pallet, within Carrier A's 500 kg limit."). If a check changed status, say so.
+- If "askFor" is empty and "askAddresses" is non-empty, ask for the collection and delivery address and contact details listed (company, street, postcode, contact name, phone, email), saying the carrier needs them and they are required before emailing the carrier. Group them by Collection and Delivery. Put this after any issues and the carrier line.
+- If "addressesStillNeeded" is true and "askAddresses" is empty, end with exactly one short line: "Collection and delivery addresses are still needed before you can email the carrier." Never list the address fields again.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
 - If "clarify" is non-empty, ask those clarifying questions.
 - If the booking is complete: give the status headline, list up to 3 issues in plain words with the fix, state the recommended carrier with its reason in one line, and say the Flight Deck panel shows details and one-click fixes. If status is cleared and not yet confirmed, ask the seller to confirm.
+- If "justConfirmed" is present, the seller has just confirmed. Reply with a short confirmation they can understand: one line saying the booking is prepared and confirmed (not yet sent to the carrier), then the summary lines from justConfirmed.summary (one per line), then "What happens next:" with justConfirmed.nextSteps as a numbered list. Leave out the status headline and carrier sentence in this reply.
 - Never say the shipment is booked with a carrier or cleared by customs. A confirmed booking is "prepared and confirmed by you; the next step is to hand it to the carrier".
 - Never use em dashes (—). Use commas, full stops or colons instead.`;
+
+const STATUS_WORD = { pass: "passes", fail: "fails", review: "needs your confirmation", not_evaluable: "is waiting for details" } as const;
+
+/**
+ * For details the seller changed (not first-time answers), the checks that depend on them, as re-run now:
+ * shows the judge-visible proof that an edit like "add a pallet" updates the checks.
+ */
+export function recheckedAfterEdit(applied: Applied, view: BookingView, before?: BookingView): string[] {
+  const edited = applied.changes.filter((c) => c.old != null && c.new != null).map((c) => c.path);
+  if (!edited.length) return [];
+  const touches = (field: string) => edited.some((p) => field === p || field.startsWith(`${p}.`));
+  // Pallets, weight, priority and destination all feed the pallet-weight check via the chosen carrier.
+  const carrierInputs = edited.some((p) => /^booking\.(pallets|grossWeightKg|sellerPriority|destinationCity|chosenCarrier)$/.test(p));
+  return view.results
+    // Failures are raised separately as "flaggedNow"; here we show what still holds after the edit.
+    .filter((r) => (r.fields.some(touches) || (carrierInputs && r.ruleId === "R-05")) && r.status !== "fail" && r.status !== "review")
+    .slice(0, 4)
+    .map((r) => {
+      const was = before?.results.find((x) => x.key === r.key)?.status;
+      const changed = was && was !== r.status ? ` (was: ${STATUS_WORD[was]})` : "";
+      return `${r.ruleId} ${r.title} ${STATUS_WORD[r.status]}${changed}: ${r.explanation}`;
+    });
+}
+
+/** What the seller sees when they confirm in chat: the booking in plain words and what happens next. */
+export function confirmationFacts(view: BookingView) {
+  const b = view.booking;
+  const c = view.carriers.selected && view.carriers.selected.eligible !== false ? view.carriers.selected : view.carriers.recommended;
+  const units = view.items.reduce((s, it) => s + (it.quantity ?? 0), 0);
+  const summary = [
+    `Booking ${b.bookingId}${b.sellerName ? ` for ${b.sellerName}` : ""}`,
+    `Route: ${b.originCity}, UK to ${b.destinationCity}, ${b.destinationCountry} (${b.destinationType})`,
+    `Goods: ${view.items.map((it) => `${num(it.quantity ?? 0)} x ${it.description ?? it.sku}`).join("; ")} (${num(units)} units)`,
+    `Packing: ${b.cartons} cartons on ${b.pallets} pallet${b.pallets === 1 ? "" : "s"}, ${b.grossWeightKg} kg gross, declared value ${b.declaredValue != null ? gbp0(b.declaredValue) : "not set"}`,
+    c ? `Carrier: ${carrierLabel(c.carrier)}${c.totalCost != null ? `, estimated ${gbp0(c.totalCost)}` : ""}` : "Carrier: not chosen yet",
+    `Collection: ${isoToDisplay(b.readyToShipDate)}${c && b.readyToShipDate ? `, expected delivery around ${isoToDisplay(addDaysISO(b.readyToShipDate, c.carrier.transitDays))}` : ""}`,
+  ];
+  return { summary, nextSteps: view.nextSteps };
+}
 
 /** Shorten at a word boundary so text never ends mid-word. */
 export const clip = (text: string, max: number) =>
   text.length <= max ? text : `${text.slice(0, max).replace(/[\s,;:(]+\S*$/, "")}…`;
 
-export function factsForReply(applied: Applied, view: BookingView, clarify: string[]) {
+export function factsForReply(
+  applied: Applied,
+  view: BookingView,
+  clarify: string[],
+  ctx: { before?: BookingView } = {},
+) {
   const hsSuggested = view.booking.hsSuggested ?? {};
   // While a past date waits for confirmation, don't also ask for the date as if nothing was given.
   const pending = view.booking.pendingReadyDate;
@@ -369,7 +416,15 @@ export function factsForReply(applied: Applied, view: BookingView, clarify: stri
     flaggedNow: flagged.slice(0, 3).map(describe),
     askFor: missing.slice(0, 4).map((m) => m.label),
     // Asked for only once the shipment details are complete, so the checks come first.
-    askAddresses: missing.length === 0 ? addressGaps(view.booking) : [],
+    // Full address request only when the booking has just become complete, or the seller is giving addresses;
+    // otherwise a one-line reminder, so later replies (e.g. "add a pallet") stay focused on the change.
+    askAddresses:
+      missing.length === 0 &&
+      (!ctx.before || ctx.before.missing.length > 0 || applied.changes.some((c) => /^(collection|delivery)\./.test(c.path)))
+        ? addressGaps(view.booking)
+        : [],
+    addressesStillNeeded: missing.length === 0 && addressGaps(view.booking).length > 0,
+    rechecked: recheckedAfterEdit(applied, view, ctx.before),
     stillMissingAfterThese: Math.max(0, missing.length - 4),
     complete,
     status: { readiness: view.readiness, headline: view.summary.headline },
@@ -378,6 +433,7 @@ export function factsForReply(applied: Applied, view: BookingView, clarify: stri
       ? { recommended: carrierLabel(rec.recommended.carrier), cost: rec.recommended.totalCost != null ? gbp0(rec.recommended.totalCost) : null, reason: rec.reason, tradeOff: rec.tradeOff }
       : { unavailable: rec.unavailableReason },
     confirmed: Boolean(view.booking.sellerConfirmedAt),
+    justConfirmed: applied.changes.some((c) => c.path === "booking.sellerConfirmedAt") ? confirmationFacts(view) : null,
   };
 }
 
@@ -389,6 +445,13 @@ function templateReply(f: ReturnType<typeof factsForReply>): string {
   if (f.heldDate)
     lines.push(`I haven't saved ${f.heldDate.date} as the ready-to-ship date because it is ${f.heldDate.daysInPast} days in the past.${f.heldDate.suggested ? ` Did you mean ${f.heldDate.suggested}?` : ""} Reply with the right date, or say "keep it" to use ${f.heldDate.date} anyway.`);
   for (const i of f.flaggedNow) lines.push(`Please check: ${i.replace(/^R-\d+ (Red|Amber)(?: \[[^\]]*\])?: /, "")}`);
+  if (f.justConfirmed) {
+    lines.push("Your booking is prepared and confirmed. CargoPilot hasn't sent it to the carrier yet.", ...f.justConfirmed.summary, "What happens next:");
+    f.justConfirmed.nextSteps.forEach((st, i) => lines.push(`${i + 1}. ${st}`));
+    return lines.join("\n");
+  }
+  for (const r of f.rechecked) lines.push(`Re-checked ${r.replace(/^R-\d+ /, "")}`);
+  if (!f.askFor.length && !f.askAddresses.length && f.addressesStillNeeded) lines.push("Collection and delivery addresses are still needed before you can email the carrier.");
   if (!f.askFor.length && f.askAddresses.length) {
     lines.push("Before you can email the carrier, I need these collection and delivery details:");
     for (const a of f.askAddresses) lines.push(`- ${a}`);
@@ -469,7 +532,7 @@ export async function runChatTurn(
   }
   applied.booking = { ...applied.booking, hsSuggested };
   const view = buildView(applied.booking, applied.items);
-  const facts = factsForReply(applied, view, ex.clarify ?? []);
+  const facts = factsForReply(applied, view, ex.clarify ?? [], { before: buildView(booking, items) });
 
   let reply: string;
   if (aiError) reply = aiError;

@@ -89,7 +89,7 @@ function whyBest(e: CarrierEvaluation, priority: SellerPriority, pallets: number
     case "Most reliable":
       return `${c.onTimeRate}% of its shipments arrive on the promised day, the best record of the carriers that can take your load.`;
     case "Balanced":
-      return `Highest overall score (${num(e.balancedScore ?? 0, 0)}/100) when cost counts 40%, speed 30% and reliability 30%.`;
+      return `the highest overall score (${num(e.balancedScore ?? 0, 0)}/100) when cost counts 40%, speed 30% and reliability 30%.`;
   }
 }
 

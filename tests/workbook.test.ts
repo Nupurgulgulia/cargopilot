@@ -114,6 +114,23 @@ describe("workbook import", () => {
     expect(res.notes[0]).toMatch(/example row/);
   });
 
+  it("reads the Bookings and Items sheets uploaded as two CSV files, keeping HS leading zeros", () => {
+    // Same parsing the upload page uses for CSV: every value stays text.
+    const csv = (text: string) => {
+      const wb = XLSX.read(text, { type: "string", raw: true });
+      return XLSX.utils.sheet_to_json<SheetRows[number]>(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: null, blankrows: false });
+    };
+    const res = importWorkbook({
+      "bookings.csv / Sheet1": csv(`${BH.join(",")}\nBK-7,Bean Co,London,United Kingdom,Berlin,Germany,Business address,15-12-2026,Cheapest,1,10,"1,000",GBP,60,No`),
+      "items.csv / Sheet1": csv(`${IH.join(",")}\nBK-7,COF-1,Roasted coffee beans,090121,100,10,10,10,0.5,India`),
+    });
+    expect(res.ok).toBe(true);
+    const { booking, items } = res.bookings[0];
+    expect(items[0].hsCode).toBe("090121");
+    expect(booking.declaredValue).toBe(1000);
+    expect(buildView(booking, items, NOW).readiness).toBe("cleared");
+  });
+
   it("reads Excel date serials", () => {
     const res = importWorkbook(
       book(
