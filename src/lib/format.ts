@@ -27,7 +27,7 @@ export function todayISO(now: Date = new Date()): string {
 }
 
 export function isoToDisplay(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "Not set";
   const [y, m, d] = iso.split("-");
   return `${d}-${m}-${y}`;
 }

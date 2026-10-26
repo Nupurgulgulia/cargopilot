@@ -9,7 +9,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "CargoPilot — Pre-flight checks for cross-border freight",
+  title: "CargoPilot: pre-flight checks for cross-border freight",
   description: "Book UK → EU freight in plain English. CargoPilot checks every booking against the rulebook and recommends the right carrier before anything ships.",
 };
 

@@ -23,7 +23,7 @@ const DEFINITE: { pattern: RegExp; category: string }[] = [
 const POSSIBLE: { pattern: RegExp; why: string }[] = [
   { pattern: /\bbatter(y|ies)\b|\brechargeable\b|\bcordless\b|\bbattery[- ]powered\b/, why: "may contain a lithium battery" },
   { pattern: /\b(e[- ]?cig(arette)?s?|vapes?|vaping)\b/, why: "usually contains a lithium battery" },
-  { pattern: /\b(laptops?|phones?|smartphones?|tablets?|smart ?watch(es)?|earbuds?|headphones?|wireless|bluetooth|drones?|e[- ]?bikes?|scooters?|cameras?|torch(es)?|flashlights?)\b/, why: "is electronics, which often contain lithium batteries" },
+  { pattern: /\b(laptops?|phones?|smartphones?|tablets?|smart ?watch(es)?|earbuds?|headphones?|wireless|bluetooth|drones?|e[- ]?bikes?|scooters?|cameras?|torch(es)?|flashlights?)\b/, why: "suggests electronics, which often contain lithium batteries" },
   { pattern: /\bsprays?\b|\bdeodorants?\b|\bair fresheners?\b|\bdry shampoo\b|\bshaving foam\b/, why: "may be an aerosol" },
   { pattern: /\b(perfumes?|fragrances?|colognes?|eau de|nail polish|nail varnish|varnish|lacquer|solvents?|sanitis(er|ers)|sanitiz(er|ers)|alcohol|spirits?|vodka|gin|whisky|rum|paints?|glues?|adhesives?|lighters?|candle oil|essential oils?|fuel)\b/, why: "may be a flammable liquid" },
 ];

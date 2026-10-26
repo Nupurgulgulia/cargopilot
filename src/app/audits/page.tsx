@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { HowItDecides } from "@/components/HowItDecides";
-import { Upload } from "@/components/icons";
 import { READINESS_META, ReadinessIcon } from "@/components/status";
 import { sessionId, sql } from "@/lib/server/db";
 
@@ -22,9 +21,8 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
         <div>
           <div className="eyebrow">Audits</div>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.02em] text-slate-900">Recent audits</h1>
-          <p className="mt-1 text-[15px] text-slate-600">Every workbook you          <p className="text-sm text-slate-600">Your uploaded workbooks, and the rules and choices behind every result.</p>apos;ve audited, and exactly how each result was reached.</p>
+          <p className="mt-1 text-[15px] text-slate-600">All the spreadsheets you&apos;ve checked, and how CargoPilot reaches each result.</p>
         </div>
-        <Link href="/upload" className="btn-primary"><Upload className="h-4 w-4" /> Upload workbook</Link>
       </div>
 
       <nav className="flex gap-1 border-b border-slate-200" aria-label="Audit sections">
@@ -63,8 +61,8 @@ async function RecentAudits() {
   if (uploads.length === 0) {
     return (
       <div className="card px-4 py-12 text-center">
-        <p className="text-sm text-slate-600">No workbooks uploaded yet.</p>
-        <Link href="/upload" className="btn-primary mt-4">Upload your first workbook</Link>
+        <p className="text-sm text-slate-600">No spreadsheets checked yet.</p>
+        <Link href="/upload" className="btn-primary mt-4">Upload a spreadsheet</Link>
       </div>
     );
   }

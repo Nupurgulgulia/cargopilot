@@ -15,7 +15,7 @@ export function BookingSummary({ view, highlight }: { view: BookingView; highlig
       <div className={`rounded-md px-2 py-1.5 transition-colors duration-700 ${highlight.has(path) ? "bg-teal-100" : ""}`}>
         <div className="text-[11px] text-slate-500">{label}</div>
         <div className={`text-sm ${value ? "font-medium text-slate-900" : isMissing ? "italic text-amber-700" : "text-slate-400"}`}>
-          {value ?? (isSkipped ? "unknown (seller doesn't know)" : isMissing ? "needed" : "—")}
+          {value ?? (isSkipped ? "unknown (seller doesn't know)" : isMissing ? "needed" : "Not needed")}
         </div>
       </div>
     );
@@ -57,7 +57,7 @@ export function BookingSummary({ view, highlight }: { view: BookingView; highlig
               {view.items.map((it, i) => {
                 const cell = (f: string, v: string | null) => (
                   <td className={`px-1 py-1 transition-colors duration-700 ${highlight.has(`items.${i}.${f}`) ? "bg-teal-100" : ""} ${v ? "text-slate-900" : missing.has(`items.${i}.${f}`) ? "italic text-amber-700" : "text-slate-400"}`}>
-                    {v ?? (skipped.has(`items.${i}.${f}`) ? "unknown" : missing.has(`items.${i}.${f}`) ? "needed" : "—")}
+                    {v ?? (skipped.has(`items.${i}.${f}`) ? "unknown" : missing.has(`items.${i}.${f}`) ? "needed" : "Not set")}
                   </td>
                 );
                 return (

@@ -1,18 +1,18 @@
 import { CARRIERS, RULEBOOK } from "@/lib/constants";
 
 const DECISIONS: [string, string][] = [
-  ["Who decides pass or fail?", "Plain code, never the AI. Every rule is a fixed calculation, so the same booking always gets the same result. Gemini only reads what sellers type and words the replies."],
-  ["R-02 — what does “within 1%” mean?", "The gap between the declared value and Σ(quantity × unit price) divided by that calculated value must be 1% or less. If the items add up to £0, the check fails and asks for prices."],
-  ["R-05 — which carrier is “chosen”?", "The carrier your priority points to (e.g. the cheapest), unless you pick one yourself. If that carrier can't take your pallet weight, R-05 fails and we offer two fixes: add pallets, or switch to the best carrier that fits."],
-  ["R-06 — how are restricted goods found?", "Descriptions are screened for clear terms (lithium, aerosol, petrol…) which fail as Red. Unclear ones (batteries, sprays, perfume, electronics) are marked “Please confirm” and you answer. This is a screen, not a certified dangerous-goods check."],
-  ["R-10 — what is “today”?", "The UK calendar date (Europe/London). A ready date of today passes."],
-  ["Missing data", "A check that can't run is shown as “Waiting for data” — never as passed. Missing details keep the booking at Needs Attention."],
-  ["Readiness", "Grounded = any Red failure. Needs Attention = Amber warnings, items to confirm, or missing details. Cleared for Dispatch = no rulebook issues. You can keep an Amber value with a reason; Red issues always block dispatch."],
-  ["Corrections", "Suggested fixes are never applied without your click. Every change keeps the old value, new value and time. Uploaded workbooks are never modified."],
-  ["Balanced priority", "Each carrier on the route is scored 0–100 on cost, speed and reliability (min–max across that route), then weighted 40% cost, 30% speed, 30% reliability. Ties are broken by cost."],
-  ["Tie-breaks", "Cheapest: cost → on-time → speed. Fastest: days → on-time → cost. Most reliable: on-time → days → cost."],
-  ["Workbook quirks", "The template's grey example row is skipped when real rows follow. Duplicate Booking IDs, item rows with no matching booking, and bookings with no items are reported. Unreadable numbers or dates are flagged, never turned into 0."],
-  ["What “confirmed” means", "Confirmation means you've approved the prepared booking. CargoPilot has not booked the carrier or cleared customs."],
+  ["Who decides pass or fail?", "Fixed rules in the code, never the AI. The same booking always gets the same result. The AI only reads what you type and writes the replies."],
+  ["R-02: what does “within 1%” mean?", "We add up quantity × unit price for every item. The declared value can be at most 1% above or below that total. If the items add up to £0, the check fails and asks for prices."],
+  ["R-05: which carrier is checked?", "The carrier that best matches your priority (for example, the cheapest), unless you pick one yourself. If that carrier can't take your pallet weight, the check fails and you can either add pallets or switch to a carrier that fits."],
+  ["R-06: how are restricted goods found?", "We scan item descriptions. Clear matches like lithium, aerosol or petrol fail straight away. Unclear ones like batteries, sprays, perfume or electronics ask you to confirm. This is a quick screen, not an official dangerous-goods check."],
+  ["R-10: what counts as “today”?", "Today's date in the UK. A ready date of today passes."],
+  ["Missing details", "If a check can't run because something is missing, it shows as waiting, never as passed. The booking stays at Needs Attention until the details are added."],
+  ["Booking status", "Grounded means at least one critical (Red) problem. Needs Attention means warnings, items to confirm or missing details. Cleared for Dispatch means every check passed. You can keep a warning with a note, but critical problems always block shipping."],
+  ["Corrections", "Suggested fixes are only applied when you click them. Every change records the old value, the new value and the time. Your uploaded spreadsheet is never changed."],
+  ["Balanced priority", "Each carrier on the route gets a score out of 100 for cost, speed and reliability, compared with the other carriers on that route. Cost counts for 40%, speed for 30% and reliability for 30%. If two carriers tie, the cheaper one wins."],
+  ["When carriers tie", "Cheapest: lower cost, then better on-time record, then faster. Fastest: fewer days, then better on-time record, then lower cost. Most reliable: better on-time record, then fewer days, then lower cost."],
+  ["Spreadsheet checks", "The template's grey example row is skipped when you add your own rows. We also flag repeated Booking IDs, items with no matching booking, bookings with no items, and numbers or dates we can't read. Nothing unreadable is ever treated as 0."],
+  ["What “confirmed” means", "You have approved the booking CargoPilot prepared. CargoPilot does not book the carrier or clear customs for you."],
 ];
 
 export function HowItDecides() {
@@ -20,7 +20,7 @@ export function HowItDecides() {
     <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold tracking-tight text-slate-900">How CargoPilot decides</h2>
-        <p className="mt-1 text-sm text-slate-600">Every decision is shown so you can check it. These are the choices where the case left room for interpretation.</p>
+        <p className="mt-1 text-sm text-slate-600">How each check and recommendation is worked out, in plain terms.</p>
       </div>
       <section className="card divide-y divide-slate-100">
         {DECISIONS.map(([q, a]) => (

@@ -162,7 +162,7 @@ function SheetHelp({ email }: { email: string }) {
               <b className="text-slate-800">2.</b> Paste the sheet&apos;s link and click <b>Connect</b>.
             </span>
             <span className="mt-3 block border-t border-slate-100 pt-2 text-slate-500">
-              Excel file in Drive? Use <b>File → Save as Google Sheets</b> first. Your own tabs are never changed — CargoPilot only updates its three tabs.
+              Excel file in Drive? Use <b>File → Save as Google Sheets</b> first. Your own tabs are never changed. CargoPilot only updates its own three tabs.
             </span>
           </span>
         </span>

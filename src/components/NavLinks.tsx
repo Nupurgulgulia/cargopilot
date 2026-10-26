@@ -31,9 +31,6 @@ export function NavLinks() {
           );
         })}
       </nav>
-      <Link href="/chat" className="hidden rounded-lg bg-teal-500 px-3 py-1.5 text-[13px] font-semibold text-navy-950 transition hover:bg-teal-400 md:inline-flex">
-        Start a booking
-      </Link>
     </>
   );
 }

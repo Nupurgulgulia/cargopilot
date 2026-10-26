@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calc, Chat, Check, Download, Truck, Upload } from "@/components/icons";
+import { Calc, Chat, Check, Truck, Upload } from "@/components/icons";
 import { ReadinessBadge } from "@/components/status";
 import type { Readiness } from "@/lib/types";
 import { sessionId, sql } from "@/lib/server/db";
@@ -14,17 +14,17 @@ const PILLARS = [
   {
     icon: Check,
     title: "Shipment Flight Deck",
-    body: "One status for every booking — Grounded, Needs Attention or Cleared for Dispatch — with blockers ranked by risk.",
+    body: "Shows at a glance whether each booking can ship: Grounded, Needs Attention or Cleared for Dispatch. The most serious problems are listed first.",
   },
   {
     icon: Calc,
     title: "Error Detective",
-    body: "See the exact calculation behind each issue and fix it in one click. Nothing is overwritten without your say-so.",
+    body: "Explains each problem with the numbers behind it and lets you fix it in one click. Nothing changes unless you approve it.",
   },
   {
     icon: Truck,
     title: "Carrier Matchmaker",
-    body: "Cheapest, fastest, most reliable or balanced — ranked from the carrier rate card, with the runner-up and the trade-off.",
+    body: "Picks the best carrier for what matters most to you: price, speed, reliability or a balance of all three. It also shows the next best option.",
   },
 ];
 
@@ -57,40 +57,33 @@ export default async function Dashboard() {
             Catch every booking error <span className="text-teal-300">before it ships.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
-            Describe a shipment in plain English or drop in your booking workbook. CargoPilot checks it against all ten pre-flight rules,
-            shows the working behind every issue, and recommends the right carrier — in seconds.
+            Describe your shipment in plain English, or upload your booking spreadsheet. CargoPilot checks it against 10 rules, explains
+            any problem and how to fix it, and suggests the best carrier.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link href="/chat" className="inline-flex items-center gap-2 rounded-lg bg-teal-500 px-5 py-3 text-sm font-semibold text-navy-950 shadow-lg shadow-teal-500/20 transition hover:bg-teal-400">
               <Chat className="h-4 w-4" /> Start a booking
             </Link>
             <Link href="/upload" className="inline-flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-              <Upload className="h-4 w-4" /> Audit a workbook
+              <Upload className="h-4 w-4" /> Upload a spreadsheet
             </Link>
-            <a href="/samples/cargopilot-sample-audit.xlsx" className="inline-flex items-center gap-1.5 px-2 text-sm text-slate-400 transition hover:text-white">
-              <Download className="h-4 w-4" /> Sample workbook
-            </a>
           </div>
         </div>
       </section>
 
       <div className="mx-auto -mt-12 max-w-7xl space-y-8 px-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <Stat label="Bookings checked" value={stats.total} />
-          <Stat label="Critical issues" value={stats.red} tone="text-red-700" hint="Red — block dispatch" />
-          <Stat label="Warnings" value={stats.amber} tone="text-amber-700" hint="Amber — review before dispatch" />
-          <Stat label="Cleared for dispatch" value={stats.cleared} tone="text-emerald-700" />
+          <Stat label="Bookings checked" value={stats.total} hint="From chat and uploads" />
+          <Stat label="Critical issues" value={stats.red} tone="text-red-700" hint="Must be fixed before shipping" />
+          <Stat label="Warnings" value={stats.amber} tone="text-amber-700" hint="Worth checking before shipping" />
+          <Stat label="Cleared for dispatch" value={stats.cleared} tone="text-emerald-700" hint="Ready to ship" />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-3">
           <section className="card overflow-hidden lg:col-span-2">
-            <Header title="Recent bookings" sub="From chat and workbook audits" />
+            <Header title="Recent bookings" sub="Your latest shipments" />
             {recent.length === 0 ? (
-              <Empty
-                title="No bookings yet"
-                body="Start a booking in chat or audit a workbook — every result lands here."
-                action={<Link href="/chat" className="btn-primary">Start a booking</Link>}
-              />
+              <Empty title="No bookings yet" body="Bookings you start in chat or upload in a spreadsheet will appear here." />
             ) : (
               <ul className="divide-y divide-slate-100">
                 {recent.map((r) => (
@@ -113,9 +106,12 @@ export default async function Dashboard() {
           </section>
 
           <section className="card overflow-hidden">
-            <Header title="Recent audits" action={<Link href="/audits" className="text-xs font-medium text-teal-700 hover:underline">View all →</Link>} />
+            <Header
+              title="Recent audits"
+              action={uploads.length > 0 ? <Link href="/audits" className="text-xs font-medium text-teal-700 hover:underline">View all →</Link> : undefined}
+            />
             {uploads.length === 0 ? (
-              <Empty title="No audits yet" body="Upload a Bookings & Items workbook to check every row at once." action={<Link href="/upload" className="btn-ghost">Audit a workbook</Link>} />
+              <Empty title="No audits yet" body="Upload a spreadsheet to check many bookings at once." />
             ) : (
               <ul className="divide-y divide-slate-100">
                 {uploads.map((u) => (
@@ -169,12 +165,11 @@ function Header({ title, sub, action }: { title: string; sub?: string; action?: 
   );
 }
 
-function Empty({ title, body, action }: { title: string; body: string; action: React.ReactNode }) {
+function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex flex-col items-center px-5 py-12 text-center">
       <div className="text-sm font-medium text-slate-900">{title}</div>
       <p className="mt-1 max-w-xs text-sm text-slate-500">{body}</p>
-      <div className="mt-4">{action}</div>
     </div>
   );
 }

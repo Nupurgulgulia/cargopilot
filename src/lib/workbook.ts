@@ -203,7 +203,7 @@ export function importWorkbook(sheets: Record<string, SheetRows>): ImportResult 
     const ctx: Ctx = { issues: [], row: n };
     const id = text(get(row, bMap.map, "bookingId"));
     if (!id) {
-      fileIssues.push({ level: "error", row: n, message: `Bookings row ${n} has no Booking ID — skipped.` });
+      fileIssues.push({ level: "error", row: n, message: `Bookings row ${n} has no Booking ID, so it was skipped.` });
       continue;
     }
     if (bookings.has(id)) {

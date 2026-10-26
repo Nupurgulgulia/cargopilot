@@ -11,7 +11,7 @@ import { useBooking } from "./useBooking";
 type Msg = { role: "user" | "assistant"; content: string; changes?: string[] };
 
 const GREETING =
-  "Hello — I'm your shipment co-pilot. Tell me what you're sending, where it's going and how many pallets, in your own words. I'll ask only for what's missing, run all ten pre-flight checks and recommend a carrier.";
+  "Hi, I'm your shipment co-pilot. Tell me what you're sending, where it's going and how many pallets. I'll ask for anything that's missing, check your booking against 10 rules and suggest the best carrier.";
 
 const SAMPLES = [
   "Hi, I need to ship 1,000 ceramic mugs from Manchester to our warehouse in Frankfurt. 3 pallets, cheapest option please.",
@@ -54,7 +54,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
       setTimeout(() => setHighlight(new Set()), 2500);
       if (!data) window.history.replaceState(null, "", `/chat/${payload.id}`);
     } catch (e) {
-      setError(`${(e as Error).message} Your booking is saved — try sending again.`);
+      setError(`${(e as Error).message} Your booking is saved, so you can try sending again.`);
       setText(m);
     } finally {
       setSending(false);
@@ -68,7 +68,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <div>
             <h1 className="text-[15px] font-semibold tracking-tight text-slate-900">New shipment</h1>
-            <p className="text-xs text-slate-500">Plain English is fine. Change any detail at any time — checks re-run instantly.</p>
+            <p className="text-xs text-slate-500">Write as you normally would. You can change any detail at any time.</p>
           </div>
           {data && <ReadinessBadge r={data.view.readiness} />}
         </div>
@@ -106,7 +106,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
             className="input max-h-40 min-h-11 resize-none"
             rows={1}
             value={text}
-            placeholder={data ? "Answer, or change any detail — e.g. “add a pallet”" : "e.g. 500 cotton t-shirts from London to a warehouse in Berlin…"}
+            placeholder={data ? "Answer, or change any detail (for example, “add a pallet”)" : "e.g. 500 cotton t-shirts from London to a warehouse in Berlin…"}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {

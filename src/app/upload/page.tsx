@@ -49,8 +49,8 @@ export default function UploadPage() {
       <div className="eyebrow">Workbook audit</div>
       <h1 className="mt-2 text-3xl font-semibold tracking-[-0.02em] text-slate-900">Audit every booking in one upload</h1>
       <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-slate-600">
-        Drop in your <b>Bookings</b> and <b>Items</b> sheets. Every booking and item line is checked against all ten pre-flight rules, and each
-        booking gets a carrier recommendation. Your original file is never altered.
+        Upload your <b>Bookings</b> and <b>Items</b> spreadsheet. CargoPilot checks every booking against 10 rules and suggests a carrier for
+        each one. Your file is never changed.
       </p>
 
       <label

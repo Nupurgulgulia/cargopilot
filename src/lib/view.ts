@@ -31,7 +31,7 @@ export function computeMissing(b: Booking, items: Item[]): MissingField[] {
     for (const f of REQUIRED_ITEM) {
       if (it[f] == null || it[f] === "") {
         const path = `items.${i}.${f}`;
-        if (!skipped.has(path)) out.push({ path, label: `${it.sku || it.description || `Item ${i + 1}`} — ${ITEM_FIELD_LABELS[f]}` });
+        if (!skipped.has(path)) out.push({ path, label: `${it.sku || it.description || `Item ${i + 1}`}: ${ITEM_FIELD_LABELS[f]}` });
       }
     }
   });
@@ -42,7 +42,7 @@ export function computeMissing(b: Booking, items: Item[]): MissingField[] {
 export function computeDataIssues(b: Booking, items: Item[]): DataIssue[] {
   const out: DataIssue[] = [...(b.importIssues ?? [])];
   if (b.originCountry && b.originCountry !== ORIGIN_COUNTRY)
-    out.push({ level: "error", field: "booking.originCountry", message: `Origin country "${b.originCountry}" isn't supported — every shipment starts in the United Kingdom.` });
+    out.push({ level: "error", field: "booking.originCountry", message: `Origin country "${b.originCountry}" isn't supported. Every shipment starts in the United Kingdom.` });
   if (b.originCity && !ORIGIN_CITIES.includes(b.originCity))
     out.push({ level: "warning", field: "booking.originCity", message: `Origin city "${b.originCity}" isn't one of ${ORIGIN_CITIES.join(", ")}.` });
   if (b.destinationCountry && !DESTINATION_COUNTRIES.includes(b.destinationCountry))
@@ -50,13 +50,13 @@ export function computeDataIssues(b: Booking, items: Item[]): DataIssue[] {
   if (b.destinationCity && b.destinationCountry && DESTINATIONS[b.destinationCountry] && !DESTINATIONS[b.destinationCountry].includes(b.destinationCity))
     out.push({ level: "error", field: "booking.destinationCity", message: `${b.destinationCity} isn't in ${b.destinationCountry}. Allowed: ${DESTINATIONS[b.destinationCountry].join(", ")}.` });
   if (b.currency && b.currency !== CURRENCY)
-    out.push({ level: "error", field: "booking.currency", message: `Currency "${b.currency}" — all values must be in GBP.` });
+    out.push({ level: "error", field: "booking.currency", message: `Currency "${b.currency}" isn't supported. All values must be in GBP.` });
   const counts: [keyof Booking, string][] = [["pallets", "Pallets"], ["cartons", "Cartons"]];
   for (const [f, l] of counts) {
     const v = b[f] as number | null;
     if (v != null && (v < 0 || !Number.isInteger(v))) out.push({ level: "error", field: `booking.${f}`, message: `${l} should be a whole number of 0 or more (got ${v}).` });
   }
-  if (b.pallets === 0) out.push({ level: "error", field: "booking.pallets", message: "Pallets is 0 — a shipment needs at least one pallet." });
+  if (b.pallets === 0) out.push({ level: "error", field: "booking.pallets", message: "Pallets is 0. A shipment needs at least one pallet." });
   for (const [f, l] of [["declaredValue", "Declared value"], ["grossWeightKg", "Gross weight"]] as const) {
     const v = b[f];
     if (v != null && v < 0) out.push({ level: "error", field: `booking.${f}`, message: `${l} can't be negative.` });
@@ -133,9 +133,9 @@ function buildNextSteps(
   const reviews = results.filter((r) => r.status === "review");
   if (missingCount) steps.push(`Provide the ${plural(missingCount, "missing detail")} so every check can run.`);
   if (dataErrors) steps.push(`Correct the ${plural(dataErrors, "data error")} in the booking.`);
-  if (reds.length) steps.push(`Fix the ${plural(reds.length, "critical issue")} (${[...new Set(reds.map((r) => r.ruleId))].join(", ")}) — the shipment must not leave until these are resolved.`);
+  if (reds.length) steps.push(`Fix the ${plural(reds.length, "critical issue")} (${[...new Set(reds.map((r) => r.ruleId))].join(", ")}). The shipment can't leave until these are resolved.`);
   if (reviews.length) steps.push(`Confirm the ${plural(reviews.length, "flagged item")} for restricted goods.`);
-  if (ambers.length) steps.push(`Review the ${plural(ambers.length, "warning")} (${[...new Set(ambers.map((r) => r.ruleId))].join(", ")}) — fix them or record why they're fine.`);
+  if (ambers.length) steps.push(`Review the ${plural(ambers.length, "warning")} (${[...new Set(ambers.map((r) => r.ruleId))].join(", ")}). Fix them, or add a note saying why they're fine.`);
 
   const carrier = rec.selected && rec.selected.eligible !== false ? rec.selected : rec.recommended;
   if (b.destinationType === "Warehouse" && !b.deliveryAppointmentBooked)
@@ -144,12 +144,12 @@ function buildNextSteps(
     steps.push(`Confirm ${carrierLabel(carrier.carrier)} with the carrier${carrier.totalCost != null ? ` (estimated ${gbp0(carrier.totalCost)})` : ""}. CargoPilot has prepared the booking but has not contacted the carrier.`);
   }
   const hs = items.filter((it) => it.hsCode).length;
-  if (items.length) steps.push(`Prepare the commercial invoice: ${plural(items.length, "line")}, ${hs === items.length ? "HS codes included" : `${items.length - hs} HS code(s) still needed`}, declared value ${b.declaredValue != null ? gbp0(b.declaredValue) : "—"}.`);
+  if (items.length) steps.push(`Prepare the commercial invoice: ${plural(items.length, "line")}, ${hs === items.length ? "HS codes included" : `${items.length - hs} HS code(s) still needed`}, declared value ${b.declaredValue != null ? gbp0(b.declaredValue) : "not set yet"}.`);
   if (b.cartons != null && b.pallets != null)
     steps.push(`Pack and label ${plural(b.cartons, "carton")} on ${plural(b.pallets, "pallet")}${b.grossWeightKg != null ? ` (${kg(b.grossWeightKg)} gross)` : ""}${b.readyToShipDate ? ` ready for collection on ${isoToDisplay(b.readyToShipDate)}` : ""}.`);
   if (carrier && b.readyToShipDate)
     steps.push(`Expected delivery around ${isoToDisplay(addDaysISO(b.readyToShipDate, carrier.carrier.transitDays))} (${plural(carrier.carrier.transitDays, "day")} transit, ${carrier.carrier.onTimeRate}% on time).`);
-  if (readiness === "cleared" && !b.sellerConfirmedAt) steps.unshift("All checks pass — review the summary and confirm the booking.");
+  if (readiness === "cleared" && !b.sellerConfirmedAt) steps.unshift("All checks pass. Review the summary and confirm the booking.");
   return steps;
 }
 

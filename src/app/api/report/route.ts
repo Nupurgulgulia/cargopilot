@@ -6,8 +6,8 @@ import type { BookingView } from "@/lib/types";
 import { buildView } from "@/lib/view";
 import { getBooking, sql, type BookingRow } from "@/lib/server/db";
 
-const READINESS = { grounded: "Grounded — dispatch blocked", attention: "Needs attention", cleared: "Cleared for dispatch review" };
-const STATUS = { pass: "Passed", fail: "Failed", review: "Needs confirmation", not_evaluable: "Not checked — data missing" };
+const READINESS = { grounded: "Grounded (dispatch blocked)", attention: "Needs attention", cleared: "Cleared for dispatch review" };
+const STATUS = { pass: "Passed", fail: "Failed", review: "Needs confirmation", not_evaluable: "Not checked (data missing)" };
 
 function issueRows(view: BookingView) {
   return view.results
@@ -78,7 +78,7 @@ export async function GET(req: Request) {
   XLSX.utils.book_append_sheet(
     wb,
     XLSX.utils.aoa_to_sheet([
-      ["CargoPilot pre-flight audit — generated " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"],
+      ["CargoPilot pre-flight audit, generated " + new Date().toISOString().slice(0, 16).replace("T", " ") + " UTC"],
       ["This is a data check against the Case 2 rulebook. It is not a customs clearance or a carrier booking."],
       ["The uploaded workbook was not modified; corrections are listed with original values in the app's change history."],
     ]),

@@ -17,14 +17,14 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
   const units = view.items.reduce((s, it) => s + (it.quantity ?? 0), 0);
 
   const rows: [string, string][] = [
-    ["Booking", `${b.bookingId ?? "—"}${b.sellerName ? ` · ${b.sellerName}` : ""}`],
+    ["Booking", `${b.bookingId ?? "Not set"}${b.sellerName ? ` · ${b.sellerName}` : ""}`],
     ["Route", `${b.originCity ?? "?"}, UK → ${b.destinationCity ?? "?"}${b.destinationCountry ? `, ${b.destinationCountry}` : ""} (${b.destinationType ?? "site type ?"})`],
-    ["Goods", view.items.length ? `${view.items.map((it) => `${num(it.quantity ?? 0)} × ${it.description ?? it.sku}`).join("; ")}` : "—"],
-    ["Packing", `${b.cartons ?? "?"} cartons on ${b.pallets ?? "?"} pallets · ${b.grossWeightKg != null ? kg(b.grossWeightKg) : "?"} gross · ${num(units)} units`],
-    ["Declared value", b.declaredValue != null ? gbp0(b.declaredValue) : "—"],
-    ["Collection", b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : "—"],
-    ["Carrier", carrier ? `${carrierLabel(carrier.carrier)}${carrier.totalCost != null ? ` · ${gbp0(carrier.totalCost)}` : ""}` : rec.unavailableReason ?? "—"],
-    ["Estimated delivery", carrier && b.readyToShipDate ? `${isoToDisplay(addDaysISO(b.readyToShipDate, carrier.carrier.transitDays))} (${carrier.carrier.transitDays} days, ${carrier.carrier.onTimeRate}% on time)` : "—"],
+    ["Goods", view.items.length ? `${view.items.map((it) => `${num(it.quantity ?? 0)} × ${it.description ?? it.sku}`).join("; ")}` : "No items yet"],
+    ["Packing", `${b.cartons ?? "?"} cartons on ${b.pallets ?? "?"} pallet${b.pallets === 1 ? "" : "s"} · ${b.grossWeightKg != null ? kg(b.grossWeightKg) : "?"} gross · ${num(units)} units`],
+    ["Declared value", b.declaredValue != null ? gbp0(b.declaredValue) : "Not set"],
+    ["Collection", b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : "Not set"],
+    ["Carrier", carrier ? `${carrierLabel(carrier.carrier)}${carrier.totalCost != null ? ` · ${gbp0(carrier.totalCost)}` : ""}` : rec.unavailableReason ?? "Not chosen yet"],
+    ["Estimated delivery", carrier && b.readyToShipDate ? `${isoToDisplay(addDaysISO(b.readyToShipDate, carrier.carrier.transitDays))} (${carrier.carrier.transitDays} days, ${carrier.carrier.onTimeRate}% on time)` : "Not known yet"],
     ["Delivery slot", b.destinationType === "Warehouse" ? (b.deliveryAppointmentBooked ? "Booked" : "Not booked yet") : "Not needed (business address)"],
   ];
 
@@ -36,7 +36,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
           <Check className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <b>Confirmed by you</b> on {new Date(b.sellerConfirmedAt).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" })}. Your booking is
-            prepared — CargoPilot has not sent it to the carrier or customs. Follow the steps below to hand it over.
+            prepared, but CargoPilot has not sent it to the carrier or customs. Follow the steps below to hand it over.
           </div>
         </div>
       ) : (
@@ -46,7 +46,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
             : view.missing.length
               ? "A few details are still missing before you can confirm."
               : view.readiness === "attention"
-                ? "No blocking issues. You can confirm now — open warnings stay on record."
+                ? "No blocking issues. You can confirm now, and any warnings stay on record."
                 : "Everything checks out. Review the summary and confirm."}
         </p>
       )}

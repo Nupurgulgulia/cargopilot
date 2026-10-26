@@ -73,7 +73,7 @@ export function AuditResults({ data }: { data: Data }) {
               <h2 className="text-sm font-semibold text-slate-900">Most common problems</h2>
               <ul className="mt-2 space-y-1 text-sm text-slate-700">
                 {topRules.map(([id, n]) => (
-                  <li key={id}><b>{id}</b> {RULE_BY_ID[id].short} — {n} booking{n > 1 ? "s" : ""}</li>
+                  <li key={id}><b>{id}</b> {RULE_BY_ID[id].short}: {n} booking{n > 1 ? "s" : ""}</li>
                 ))}
               </ul>
             </div>

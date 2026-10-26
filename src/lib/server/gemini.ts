@@ -9,7 +9,7 @@ const MODELS = [process.env.GEMINI_MODEL || "gemini-3.8-flash", "gemini-flash-la
 interface CallOpts {
   system: string;
   prompt: string;
-  json?: object; // JSON shape — described in the prompt; output forced to JSON (strict schema mode was dropping fields)
+  json?: object; // JSON shape, described in the prompt; output forced to JSON (strict schema mode was dropping fields)
   temperature?: number;
   thinking?: ThinkingLevel;
   timeoutMs?: number;

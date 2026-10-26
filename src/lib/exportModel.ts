@@ -82,7 +82,7 @@ function describeEvent(e: ExportEvent, b: ExportBooking) {
   if (p[0] === "booking") {
     const header = bookingHeader(p[1]);
     return {
-      sheet: header ? "Bookings" : "—",
+      sheet: header ? "Bookings" : "CargoPilot",
       row: header ? b.booking.sourceRow ?? "" : "",
       field: header ?? (p[1] === "chosenCarrier" ? "Chosen carrier (CargoPilot)" : p[1]),
       from: cellFor(p[1], e.oldValue),
@@ -132,7 +132,7 @@ export function buildExport(bookings: ExportBooking[], events: ExportEvent[], no
   const changes: SheetModel = {
     name: SHEET_NAMES.changes,
     rows: [
-      ["CargoPilot Changes — every edit made in CargoPilot, grouped by Booking ID. Your original sheets are not changed."],
+      ["CargoPilot Changes: every edit made in CargoPilot, grouped by Booking ID. Your original sheets are not changed."],
       ["Last updated (UK)", ukTime(now.toISOString())],
       [],
       ["Booking ID", "When (UK)", "Sheet", "Row", "Field", "Original value", "New value", "How", "Rule"],

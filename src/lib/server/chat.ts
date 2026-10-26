@@ -94,10 +94,10 @@ export const EXTRACT_SYSTEM = `You are the data-extraction step of CargoPilot, a
 You receive the current booking state, recent conversation and the seller's LATEST message. Return JSON with ONLY the values the seller explicitly states or changes in the latest message.
 
 Rules:
-- Capture EVERY value the seller states — a single message often contains the whole booking AND all its products; include every one of them. Never guess or invent values that are not stated (HS codes, weights, prices, dates, countries of origin, yes/no answers): omit those.
+- Capture EVERY value the seller states. A single message often contains the whole booking AND all its products; include every one of them. Never guess or invent values that are not stated (HS codes, weights, prices, dates, countries of origin, yes/no answers): omit those.
 - Use earlier messages only to understand what the seller is answering (e.g. "yes" or "3" answering the assistant's last question).
 - Relative edits are allowed: "add a pallet" with 2 pallets on file → pallets 3; "make it 1,200 units" → quantity 1200.
-- Allowed origin cities: ${ORIGIN_CITIES.join(", ")}. Destinations: ${Object.entries(DESTINATIONS).map(([c, cs]) => `${c} (${cs.join(", ")})`).join("; ")}. If the seller names any other city or country, do NOT put it in booking — add a short note to "clarify".
+- Allowed origin cities: ${ORIGIN_CITIES.join(", ")}. Destinations: ${Object.entries(DESTINATIONS).map(([c, cs]) => `${c} (${cs.join(", ")})`).join("; ")}. If the seller names any other city or country, do NOT put it in booking; add a short note to "clarify".
 - destinationType: "Warehouse" for warehouses, fulfilment/distribution centres, Amazon FCs; "Business address" for shops, offices, stores, customer premises.
 - sellerPriority: Cheapest (cheap, lowest cost, budget), Fastest (urgent, ASAP, quick), Most reliable (must arrive on time, reliability), Balanced (no preference, best trade-off).
 - Money is GBP. "£5 each" → unitPrice 5. declaredValue = the total goods value the seller states (e.g. "declared value £6,000", "goods worth £6k" → 6000). Copy what they say; never calculate it from items yourself.
@@ -148,7 +148,7 @@ const label = (path: string, items: Item[]) => {
 };
 
 function fmt(v: unknown): string {
-  if (v == null) return "—";
+  if (v == null) return "blank";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "number") return num(v);
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) return isoToDisplay(v);
@@ -237,7 +237,7 @@ export function applyExtraction(booking: Booking, items: Item[], ex: Extraction)
       b = { ...b, sellerConfirmedAt: new Date().toISOString() };
       changes.push({ path: "booking.sellerConfirmedAt", label: "Booking confirmed by seller", old: null, new: "confirmed" });
     } else {
-      rejected.push(v.readiness === "grounded" ? "Can't confirm yet — critical (Red) issues must be fixed first." : "Can't confirm yet — some details are still missing.");
+      rejected.push(v.readiness === "grounded" ? "Can't confirm yet. Fix the critical (Red) issues first." : "Can't confirm yet. Some details are still missing.");
     }
   }
   return { booking: b, items: its, changes, rejected, unknown };
@@ -262,15 +262,16 @@ export function orderMissing(missing: MissingField[]): MissingField[] {
 }
 
 const REPLY_SYSTEM = `You are CargoPilot, a friendly, efficient shipment-booking co-pilot. Write the assistant's next chat message to a seller.
-You get FACTS computed by CargoPilot's rules engine. Use only these facts — never invent numbers, carriers, prices or rule outcomes, and never decide pass/fail yourself.
+You get FACTS computed by CargoPilot's rules engine. Use only these facts. Never invent numbers, carriers, prices or rule outcomes, and never decide pass/fail yourself.
 Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullets for lists. No markdown headings, no bold.
 - Briefly acknowledge what changed (if anything). If a change affected checks or the carrier, say so in one line.
 - If anything was rejected, explain why in one line and ask again.
-- If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later) — never say it doesn't matter.
+- If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later). Never say it doesn't matter.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
 - If "clarify" is non-empty, ask those clarifying questions.
 - If the booking is complete: give the status headline, list up to 3 issues in plain words with the fix, state the recommended carrier with its reason in one line, and say the Flight Deck panel shows details and one-click fixes. If status is cleared and not yet confirmed, ask the seller to confirm.
-- Never say the shipment is booked with a carrier or cleared by customs. A confirmed booking is "prepared and confirmed by you — the next step is to hand it to the carrier".`;
+- Never say the shipment is booked with a carrier or cleared by customs. A confirmed booking is "prepared and confirmed by you; the next step is to hand it to the carrier".
+- Never use em dashes (—). Use commas, full stops or colons instead.`;
 
 export function factsForReply(applied: Applied, view: BookingView, clarify: string[]) {
   const missing = orderMissing(view.missing);
@@ -355,10 +356,10 @@ export async function runChatTurn(
       first = first && second ? mergeExtractions(first, second) : (first ?? second);
     }
     if (first) ex = first;
-    else aiError = "I couldn't read that reliably — nothing was changed.";
+    else aiError = "I couldn't read that reliably, so nothing was changed. Please try rephrasing.";
   } catch (e) {
     console.error("extraction failed", e);
-    aiError = "The AI service didn't respond, so nothing was changed. Your booking is saved — please try again.";
+    aiError = "The AI service didn't respond, so nothing was changed. Your booking is saved. Please try again.";
   }
 
   const applied = applyExtraction(booking, items, ex);

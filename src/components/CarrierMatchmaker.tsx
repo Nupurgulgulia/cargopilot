@@ -118,7 +118,7 @@ function Row({ c, current, busy, onPick }: { c: CarrierEvaluation; current: bool
       <td className="px-2">{c.carrier.transitDays} d</td>
       <td className="px-2">{c.carrier.onTimeRate}%</td>
       <td className="px-2">{kg(c.carrier.maxWeightPerPalletKg)}</td>
-      <td className="px-2">{c.balancedScore != null ? num(c.balancedScore, 0) : "—"}</td>
+      <td className="px-2">{c.balancedScore != null ? num(c.balancedScore, 0) : "n/a"}</td>
       <td className="px-2">
         {c.eligible === null ? (
           <span className="text-xs text-slate-500">needs weight</span>

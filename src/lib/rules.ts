@@ -34,7 +34,7 @@ function make(
 }
 
 function missingList(names: string[]) {
-  return `Can't check yet — missing ${names.join(", ")}.`;
+  return `Can't check yet. Missing: ${names.join(", ")}.`;
 }
 
 /** Collect "Item 2 quantity"-style names for item fields that are blank. */
@@ -69,7 +69,7 @@ function r01(b: Booking, items: Item[]): RuleResult[] {
       });
     }
     if (digits.length < 6) {
-      const hint = digits.length === 5 ? " If the real code starts with 0, Excel may have dropped the leading zero — store it as text." : "";
+      const hint = digits.length === 5 ? " If the real code starts with 0, Excel may have dropped the leading zero, so store it as text." : "";
       return make("R-01", "fail", `HS code "${raw}" has only ${digits.length} digits; at least 6 are required.${hint}`, {
         ...base, observed: `${digits.length} digits`, expected: "at least 6 digits", suggestions: [input],
       });
@@ -105,7 +105,7 @@ function r02(b: Booking, items: Item[]): RuleResult {
     });
   }
   return make("R-02", "fail",
-    `Declared value is ${gbp(declared)} but quantity × unit price across items comes to ${gbp(calc)} — ${declared < calc ? "under" : "over"}-declared by ${gbp(diff)} (${pct(ratio)}), beyond the 1% allowed. Customs compares this with the invoice.`,
+    `Declared value is ${gbp(declared)} but quantity × unit price across items comes to ${gbp(calc)}. That is ${declared < calc ? "under" : "over"}-declared by ${gbp(diff)} (${pct(ratio)}), beyond the 1% allowed. Customs compares this with the invoice.`,
     {
       fields: ["booking.declaredValue"], calculation, observed: gbp(declared), expected: `${gbp(calc)} (±1%)`,
       suggestions: [{ kind: "set", path: "booking.declaredValue", value: round2(calc), label: `Set declared value to ${gbp(calc)}` }],
@@ -176,7 +176,7 @@ function r05(b: Booking, rec: CarrierRecommendation): RuleResult {
   const sel = rec.selected;
   if (!sel) {
     if (rec.candidates.length === 0) {
-      return make("R-05", "not_evaluable", `Can't check yet — ${rec.unavailableReason ?? "no carrier selected"}`, { fields, calculation: base });
+      return make("R-05", "not_evaluable", `Can't check yet. ${rec.unavailableReason ?? "No carrier selected."}`, { fields, calculation: base });
     }
     const fits = rec.candidates.filter((c) => c.eligible);
     if (fits.length === rec.candidates.length)
@@ -189,7 +189,7 @@ function r05(b: Booking, rec: CarrierRecommendation): RuleResult {
         suggestions: [{ kind: "set", path: "booking.pallets", value: need, label: `Spread over ${need} pallets (${kg(b.grossWeightKg! / need)} each)` }],
       });
     }
-    return make("R-05", "review", `${kg(wpp)} per pallet fits some carriers but not others — set the seller priority so a carrier can be chosen.`, { fields, calculation: base });
+    return make("R-05", "review", `${kg(wpp)} per pallet fits some carriers but not others. Set a priority so a carrier can be chosen.`, { fields, calculation: base });
   }
   const limit = sel.carrier.maxWeightPerPalletKg;
   const calculation = `${base} · ${carrierLabel(sel.carrier)} limit ${kg(limit)}`;
@@ -219,7 +219,7 @@ function r06(b: Booking, items: Item[]): RuleResult[] {
   return items.map((it, i) => {
     const key = `R-06:item:${i}`;
     const base = { key, itemIndex: i, itemLabel: itemLabel(it, i), fields: [`items.${i}.description`] };
-    if (!it.description?.trim()) return make("R-06", "not_evaluable", "Can't screen — the item has no description.", base);
+    if (!it.description?.trim()) return make("R-06", "not_evaluable", "Can't check yet. The item has no description.", base);
     const answer = b.hazardConfirmations?.[String(i)];
     const s = screenDescription(it.description);
     const removeOrEdit: Suggestion[] = [
@@ -232,15 +232,15 @@ function r06(b: Booking, items: Item[]): RuleResult[] {
       });
     }
     if (s.level === "definite") {
-      return make("R-06", "fail", `Description mentions "${s.term}" — a ${s.category}. Lithium batteries, aerosols and flammable liquids can't be shipped.`, {
+      return make("R-06", "fail", `The description mentions "${s.term}", which is a ${s.category}. Lithium batteries, aerosols and flammable liquids can't be shipped.`, {
         ...base, observed: s.term, suggestions: removeOrEdit,
       });
     }
     if (s.level === "possible") {
       if (answer === "none") {
-        return make("R-06", "pass", `"${s.term}" ${s.category}; the seller confirmed it contains no lithium battery, aerosol or flammable liquid.`, { ...base, observed: s.term });
+        return make("R-06", "pass", `The description mentions "${s.term}", but the seller confirmed it contains no lithium battery, aerosol or flammable liquid.`, { ...base, observed: s.term });
       }
-      return make("R-06", "review", `Description mentions "${s.term}", which ${s.category}. Please confirm before dispatch.`, {
+      return make("R-06", "review", `The description mentions "${s.term}". This ${s.category}, so please confirm before dispatch.`, {
         ...base, observed: s.term,
         suggestions: [
           { kind: "set", path: `hazard.${i}`, value: "none", label: "Confirm: no lithium battery, aerosol or flammable liquid" },
@@ -266,7 +266,7 @@ function r07(b: Booking, items: Item[]): RuleResult {
     return make("R-07", "pass", `Gross weight ${kg(b.grossWeightKg!)} covers the ${kg(net)} of goods${b.grossWeightKg! > net ? ` plus ${kg(b.grossWeightKg! - net)} of packaging` : ""}.`, { fields, calculation });
   }
   return make("R-07", "fail",
-    `Gross weight ${kg(b.grossWeightKg!)} is less than the goods alone (${kg(net)}) — short by ${kg(net - b.grossWeightKg!)}, before counting cartons and pallets. Either the gross weight or a unit weight is wrong.`,
+    `Gross weight ${kg(b.grossWeightKg!)} is less than the goods alone (${kg(net)}), even before cartons and pallets. It is short by ${kg(net - b.grossWeightKg!)}, so either the gross weight or a unit weight is wrong.`,
     {
       fields: ["booking.grossWeightKg"], calculation, observed: kg(b.grossWeightKg!), expected: `≥ ${kg(net)}`,
       suggestions: [
@@ -280,12 +280,12 @@ function r07(b: Booking, items: Item[]): RuleResult {
 function r08(b: Booking): RuleResult {
   const fields = ["booking.destinationType", "booking.deliveryAppointmentBooked"];
   if (!b.destinationType) return make("R-08", "not_evaluable", missingList(["destination type"]), { fields });
-  if (b.destinationType !== "Warehouse") return make("R-08", "pass", "Going to a business address — no warehouse appointment needed.", { fields });
+  if (b.destinationType !== "Warehouse") return make("R-08", "pass", "Going to a business address, so no warehouse appointment is needed.", { fields });
   if (b.deliveryAppointmentBooked == null) return make("R-08", "not_evaluable", missingList(["whether a delivery appointment is booked"]), { fields });
   if (b.deliveryAppointmentBooked) return make("R-08", "pass", "Warehouse delivery appointment is booked.", { fields });
   return make("R-08", "fail", "This goes to a warehouse but no delivery appointment is booked. Warehouses commonly turn away unbooked deliveries, which means re-delivery fees and delay.", {
     fields: ["booking.deliveryAppointmentBooked"], observed: "No", expected: "Yes",
-    suggestions: [{ kind: "set", path: "booking.deliveryAppointmentBooked", value: true, label: "I've booked a delivery slot — mark as Yes" }],
+    suggestions: [{ kind: "set", path: "booking.deliveryAppointmentBooked", value: true, label: "I've booked a delivery slot" }],
   });
 }
 
@@ -318,7 +318,7 @@ function r10(b: Booking, today: string): RuleResult {
 }
 
 export function runRules(b: Booking, items: Item[], rec: CarrierRecommendation, today: string): RuleResult[] {
-  const noItems = (id: string) => [make(id, "not_evaluable", "Can't check yet — no items have been added.", { key: id })];
+  const noItems = (id: string) => [make(id, "not_evaluable", "Can't check yet. No items have been added.", { key: id })];
   const perItem = (id: string, fn: () => RuleResult[]) => (items.length ? fn() : noItems(id));
   const results = [
     ...perItem("R-01", () => r01(b, items)),

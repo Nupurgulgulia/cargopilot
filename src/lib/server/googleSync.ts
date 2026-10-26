@@ -179,7 +179,7 @@ export async function syncUpload(uploadId: string): Promise<void> {
     await writeSheets(data.googleSheetId, buildExport(data.bookings, data.events));
     await sql`UPDATE uploads SET google_synced_at = now(), google_error = null WHERE id = ${uploadId}`;
   } catch (e) {
-    const msg = e instanceof SheetError ? e.message : "Sync failed — try “Sync now”.";
+    const msg = e instanceof SheetError ? e.message : "Sync failed. Try “Sync now”.";
     console.error("google sync failed", e);
     await sql`UPDATE uploads SET google_error = ${msg} WHERE id = ${uploadId}`;
     throw e;

@@ -82,12 +82,12 @@ function whyBest(e: CarrierEvaluation, priority: SellerPriority, pallets: number
   switch (priority) {
     case "Cheapest":
       return e.totalCost != null
-        ? `${gbp0(e.totalCost)} for ${plural(pallets!, "pallet")} (${gbp0(c.pricePerPallet)} per pallet) — the lowest price of the eligible options.`
-        : `${gbp0(c.pricePerPallet)} per pallet — the lowest price on this route.`;
+        ? `${gbp0(e.totalCost)} for ${plural(pallets!, "pallet")} (${gbp0(c.pricePerPallet)} per pallet), the lowest price of the carriers that can take your load.`
+        : `${gbp0(c.pricePerPallet)} per pallet, the lowest price on this route.`;
     case "Fastest":
-      return `${plural(c.transitDays, "day")} in transit — the quickest eligible option.`;
+      return `${plural(c.transitDays, "day")} in transit, the quickest of the carriers that can take your load.`;
     case "Most reliable":
-      return `${c.onTimeRate}% of its shipments arrive on the promised day — the highest of the eligible options.`;
+      return `${c.onTimeRate}% of its shipments arrive on the promised day, the best record of the carriers that can take your load.`;
     case "Balanced":
       return `Highest overall score (${num(e.balancedScore ?? 0, 0)}/100) when cost counts 40%, speed 30% and reliability 30%.`;
   }
@@ -174,7 +174,7 @@ export function recommendCarrier(booking: Booking): CarrierRecommendation {
   }
 
   const tradeOff = runnerUp
-    ? `Runner-up: ${label(runnerUp.carrier)} — ${compare(recommended, runnerUp)}.`
+    ? `Runner-up: ${label(runnerUp.carrier)}, which is ${compare(recommended, runnerUp)}.`
     : "No runner-up: this is the only carrier on the route that can take the load.";
 
   return {

@@ -32,10 +32,10 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
   const open = view.results.filter((r) => r.status !== "pass");
   const groups: { title: string; hint: string; items: RuleResult[] }[] = [
-    { title: "Blocking dispatch", hint: "Critical (Red) — the shipment can't leave until these are fixed", items: open.filter((r) => r.status === "fail" && r.severity === "Red") },
-    { title: "Needs your confirmation", hint: "A quick yes or no on restricted goods", items: open.filter((r) => r.status === "review") },
-    { title: "Warnings", hint: "Amber — fix them, or note why they're fine", items: open.filter((r) => r.status === "fail" && r.severity === "Amber") },
-    { title: "Waiting on details", hint: "These checks run the moment the data arrives", items: open.filter((r) => r.status === "not_evaluable") },
+    { title: "Blocking dispatch", hint: "Must be fixed before the shipment can leave", items: open.filter((r) => r.status === "fail" && r.severity === "Red") },
+    { title: "Needs your confirmation", hint: "Tell us whether these items contain restricted goods", items: open.filter((r) => r.status === "review") },
+    { title: "Warnings", hint: "Fix them, or add a note explaining why they're fine", items: open.filter((r) => r.status === "fail" && r.severity === "Amber") },
+    { title: "Waiting on details", hint: "These checks run once the details are added", items: open.filter((r) => r.status === "not_evaluable") },
   ];
   const passed = view.results.filter((r) => r.status === "pass");
 
@@ -67,7 +67,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
             return (
-              <div key={r.id} title={`${r.id} ${r.rule} — ${STATUS_META[s].label}`} className="flex flex-col items-center gap-0.5 bg-white py-2">
+              <div key={r.id} title={`${r.id} ${r.rule}: ${STATUS_META[s].label}`} className="flex flex-col items-center gap-0.5 bg-white py-2">
                 <StatusIcon status={s} severity={r.severity} />
                 <span className="text-[10px] font-semibold text-slate-600">{r.id}</span>
                 <span className={`hidden text-[9px] sm:block ${STATUS_META[s].cls}`}>{STATUS_META[s].label}</span>
@@ -91,7 +91,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
       {view.dataIssues.length > 0 && (
         <section className="card border-slate-300 p-4">
           <h3 className="text-sm font-semibold text-slate-900">Data quality</h3>
-          <p className="text-xs text-slate-500">Separate from the ten rules: values that couldn&apos;t be read or don&apos;t add up.</p>
+          <p className="text-xs text-slate-500">Values in the booking that couldn&apos;t be read or don&apos;t make sense.</p>
           <ul className="mt-2 space-y-1 text-sm">
             {view.dataIssues.map((d, i) => (
               <li key={i} className={d.level === "error" ? "text-red-800" : "text-amber-900"}>• {d.message}</li>
@@ -136,7 +136,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
       {data.history.length > 0 && (
         <details className="card p-4">
           <summary className="cursor-pointer text-sm font-semibold text-slate-900">Audit trail ({data.history.length})</summary>
-          <p className="mt-1 text-xs text-slate-500">Every change is recorded with its original value — nothing is overwritten silently.</p>
+          <p className="mt-1 text-xs text-slate-500">Every change is saved with its original value. Nothing is overwritten without your approval.</p>
           <ul className="mt-2 space-y-1.5 text-sm">
             {data.history.map((h) => (
               <li key={h.id} className="text-slate-700">
@@ -159,7 +159,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 }
 
 function fmt(v: unknown) {
-  if (v == null) return "—";
+  if (v == null) return "blank";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) return isoToDisplay(v);
   if (typeof v === "object") return (v as { description?: string; sku?: string }).description ?? (v as { sku?: string }).sku ?? "item";
@@ -232,7 +232,7 @@ function IssueCard({ r, run, compact }: { r: RuleResult; run: RunAction; compact
             {r.status === "fail" && !compact && (
               keeping ? (
                 <div className="space-y-2 rounded-lg border border-slate-200 p-2.5">
-                  <label className="text-xs font-medium text-slate-700">Keep the original value — why is it correct?</label>
+                  <label className="text-xs font-medium text-slate-700">Why is the original value correct?</label>
                   <textarea className="input min-h-16" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Declared value includes a separately invoiced discount" />
                   <div className="flex gap-2">
                     <button className="btn-dark text-xs" disabled={busy || reason.trim().length < 3} onClick={() => go({ type: "keep", key: r.key, ruleId: r.ruleId, reason })}>Keep & record reason</button>
