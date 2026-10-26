@@ -173,7 +173,11 @@ function fmt(v: unknown) {
   if (v == null) return "blank";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v)) return isoToDisplay(v);
-  if (typeof v === "object") return (v as { description?: string; sku?: string }).description ?? (v as { sku?: string }).sku ?? "item";
+  if (typeof v === "object") {
+    const o = v as { description?: string; sku?: string; company?: string; street?: string; postcode?: string };
+    if ("street" in o || "company" in o) return [o.company, o.street, o.postcode].filter(Boolean).join(", ") || "address";
+    return o.description ?? o.sku ?? "item";
+  }
   return String(v);
 }
 

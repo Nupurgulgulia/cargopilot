@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   BOOKING_FIELD_LABELS, CARRIERS, DESTINATIONS, ITEM_FIELD_LABELS, ITEM_ORIGIN_COUNTRIES, ORIGIN_CITIES, SELLER_PRIORITIES,
 } from "../constants";
+import { ADDRESS_FIELDS, addressGaps } from "../addresses";
 import { applyChange, ChangeError, clearKeptFor } from "../changes";
 import { carrierLabel } from "../carriers";
 import { daysBetweenISO, gbp0, isoToDisplay, num, parseDate, todayISO } from "../format";
@@ -41,6 +42,8 @@ export const EXTRACTION_SCHEMA = {
         },
       },
     },
+    collection: { type: "object", properties: { company: str_, street: str_, postcode: str_, contactName: str_, phone: str_, email: str_, notes: str_ } },
+    delivery: { type: "object", properties: { company: str_, street: str_, postcode: str_, contactName: str_, phone: str_, email: str_, notes: str_ } },
     removeItems: { type: "array", items: { type: "integer" } },
     unknownFields: { type: "array", items: str_ },
     hazardAnswers: {
@@ -84,6 +87,8 @@ export const Extraction = z.preprocess(dropNulls, z.object({
     sku: s, description: s, hsCode: s, quantity: n, unitPrice: n, unitsPerCarton: n, cartons: n,
     unitWeightKg: n, countryOfOrigin: s,
   })).optional(),
+  collection: z.object({ company: s, street: s, postcode: s, contactName: s, phone: s, email: s, notes: s }).optional().catch(undefined),
+  delivery: z.object({ company: s, street: s, postcode: s, contactName: s, phone: s, email: s, notes: s }).optional().catch(undefined),
   removeItems: z.array(z.number().int()).optional().catch(undefined),
   unknownFields: z.array(z.string()).optional().catch(undefined),
   hazardAnswers: z.array(z.object({ ref: z.number().int(), answer: z.enum(["none", "contains"]) })).optional().catch(undefined),
@@ -112,6 +117,7 @@ Rules:
 - If an item in the state has "suggestedHsCode" and the seller accepts it ("yes", "use that", "use the suggested code"), return that item's hsCode = suggestedHsCode (with its ref).
 - If the state has "pastDateAwaitingConfirmation", the seller was asked about a past date. If they accept the suggested date ("yes", "that's right", "the 2026 one"), return readyToShipDate = the suggested date. If they explicitly want to keep the past date, return readyToShipDate = that past date and keepPastDate: true. If they give a different date, return that date.
 - If the seller says they don't know / don't have a value, list its path in unknownFields, e.g. "booking.grossWeightKg" or "items.1.hsCode" (1-based item number).
+- collection = the pickup site in the origin city; delivery = the drop-off site in the destination city. Fill company, street, postcode, contactName, phone, email and notes (opening hours, slot or reference) only as stated. Don't put the city in street.
 - hazardAnswers: when the seller confirms whether a flagged item contains a lithium battery, aerosol or flammable liquid.
 - chooseCarrier: only if the seller explicitly picks a carrier. confirmBooking: only if the seller explicitly confirms/approves the final booking.
 - deliveryAppointmentBooked only if the seller says whether a delivery slot/appointment is booked.
@@ -126,6 +132,7 @@ export function stateForPrompt(b: Booking, items: Item[]) {
       destinationType: b.destinationType, readyToShipDate: b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : null,
       sellerPriority: b.sellerPriority, pallets: b.pallets, cartons: b.cartons, declaredValueGBP: b.declaredValue,
       grossWeightKg: b.grossWeightKg, deliveryAppointmentBooked: b.deliveryAppointmentBooked,
+      collection: b.collection ?? null, delivery: b.delivery ?? null,
     },
     items: items.map((it, i) => ({
       number: i + 1,
@@ -165,6 +172,10 @@ const label = (path: string, items: Item[]) => {
     return `${name} ${(ITEM_FIELD_LABELS[p[2]] ?? p[2]).toLowerCase()}`;
   }
   if (p[0] === "hazard") return `Restricted-goods answer for item ${Number(p[1]) + 1}`;
+  if (p[0] === "collection" || p[0] === "delivery") {
+    const f = ADDRESS_FIELDS.find((x) => x.key === p[1]);
+    return `${p[0] === "collection" ? "Collection" : "Delivery"} ${(f?.label ?? p[1]).toLowerCase()}`;
+  }
   return path;
 };
 
@@ -246,6 +257,12 @@ export function applyExtraction(booking: Booking, items: Item[], ex: Extraction)
     if (!its[idx].sku) its = its.map((x, j) => (j === idx ? { ...x, sku: `ITEM-${idx + 1}` } : x));
   }
 
+  for (const side of ["collection", "delivery"] as const) {
+    const a = ex[side];
+    if (!a) continue;
+    for (const [k, v] of Object.entries(a)) if (v != null && v !== "") set(`${side}.${k}`, v);
+  }
+
   for (const h of ex.hazardAnswers ?? []) if (its[h.ref - 1]) set(`hazard.${h.ref - 1}`, h.answer);
 
   for (const ref of [...(ex.removeItems ?? [])].sort((a, c) => c - a)) {
@@ -305,6 +322,7 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - If "hsSuggestions" is non-empty, when you ask for those HS codes offer each suggested code with its short description (e.g. "Suggested HS code for cotton tote bags: 420292 (cases and containers). Reply yes to use it, or tap Suggest in the booking panel for alternatives."). Never invent other codes.
 - If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was NOT saved. Say so plainly (it is N days in the past), ask whether they meant the suggested date, or want to keep the past date anyway, or want a different date. Do this right after the acknowledgement and before asking for anything else.
 - If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
+- If "askFor" is empty and "askAddresses" is non-empty, ask for the collection and delivery address and contact details listed (company, street, postcode, contact name, phone, email), saying the carrier needs them and they are required before emailing the carrier. Group them by Collection and Delivery.
 - If "askFor" is non-empty: ask for exactly those details in one compact message (group naturally; give examples/allowed options where helpful). Don't ask for anything else.
 - If "clarify" is non-empty, ask those clarifying questions.
 - If the booking is complete: give the status headline, list up to 3 issues in plain words with the fix, state the recommended carrier with its reason in one line, and say the Flight Deck panel shows details and one-click fixes. If status is cleared and not yet confirmed, ask the seller to confirm.
@@ -350,6 +368,8 @@ export function factsForReply(applied: Applied, view: BookingView, clarify: stri
       : null,
     flaggedNow: flagged.slice(0, 3).map(describe),
     askFor: missing.slice(0, 4).map((m) => m.label),
+    // Asked for only once the shipment details are complete, so the checks come first.
+    askAddresses: missing.length === 0 ? addressGaps(view.booking) : [],
     stillMissingAfterThese: Math.max(0, missing.length - 4),
     complete,
     status: { readiness: view.readiness, headline: view.summary.headline },
@@ -369,6 +389,10 @@ function templateReply(f: ReturnType<typeof factsForReply>): string {
   if (f.heldDate)
     lines.push(`I haven't saved ${f.heldDate.date} as the ready-to-ship date because it is ${f.heldDate.daysInPast} days in the past.${f.heldDate.suggested ? ` Did you mean ${f.heldDate.suggested}?` : ""} Reply with the right date, or say "keep it" to use ${f.heldDate.date} anyway.`);
   for (const i of f.flaggedNow) lines.push(`Please check: ${i.replace(/^R-\d+ (Red|Amber)(?: \[[^\]]*\])?: /, "")}`);
+  if (!f.askFor.length && f.askAddresses.length) {
+    lines.push("Before you can email the carrier, I need these collection and delivery details:");
+    for (const a of f.askAddresses) lines.push(`- ${a}`);
+  }
   if (f.askFor.length) {
     lines.push("To complete the booking I still need:");
     for (const a of f.askFor) lines.push(`- ${a}`);

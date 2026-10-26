@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { addressGaps } from "@/lib/addresses";
 import { chosenCarrier } from "@/lib/carrierEmail";
 import { carrierLabel } from "@/lib/carriers";
 import type { BookingPayload } from "@/lib/server/payload";
@@ -41,6 +42,7 @@ export function CarrierEmailPanel({ data, run }: { data: BookingPayload; run: Ru
   }, [carrierKey]);
 
   const sent = data.email.sent.filter((e) => e.status === "sent");
+  const gaps = addressGaps(data.view.booking);
   const name = carrier ? carrierLabel(carrier.carrier) : "the carrier";
 
   async function loadPreview() {
@@ -81,6 +83,13 @@ export function CarrierEmailPanel({ data, run }: { data: BookingPayload; run: Ru
         </ul>
       )}
 
+      {gaps.length > 0 && (
+        <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          The carrier needs the collection and delivery addresses and contacts before you can send.{" "}
+          <a href="#addresses" className="font-medium underline">Add them above</a> ({gaps.length} missing).
+        </p>
+      )}
+
       <form
         className="mt-3 space-y-2"
         onSubmit={async (ev) => {
@@ -113,7 +122,7 @@ export function CarrierEmailPanel({ data, run }: { data: BookingPayload; run: Ru
           <textarea className="input mt-1 min-h-14" maxLength={500} placeholder="For example: tail-lift needed at collection" value={note} onChange={(e) => setNote(e.target.value)} />
         </label>
         <div className="flex flex-wrap items-center gap-2">
-          <button className="btn-primary" disabled={busy || !to.trim() || !replyTo.trim()}>
+          <button className="btn-primary" disabled={busy || !to.trim() || !replyTo.trim() || gaps.length > 0}>
             <Send className="h-4 w-4" /> {busy ? "Sending…" : sent.length ? "Send again" : "Send to carrier"}
           </button>
           <button

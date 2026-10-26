@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { BookingPayload } from "@/lib/server/payload";
 import { isoToDisplay } from "@/lib/format";
+import { AddressesCard } from "./AddressesCard";
 import { BookingSummary } from "./BookingSummary";
 import { FlightDeck } from "./FlightDeck";
 import { useBooking } from "./useBooking";
@@ -30,6 +31,7 @@ export function BookingDeck({ initial }: { initial: BookingPayload }) {
         </div>
       </div>
       <BookingSummary view={data.view} highlight={new Set()} run={run} />
+      <AddressesCard view={data.view} run={run} />
       {data.source === "upload" && data.original && <OriginalNote />}
       <FlightDeck data={data} run={run} />
     </div>

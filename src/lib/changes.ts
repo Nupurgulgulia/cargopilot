@@ -6,7 +6,8 @@ import {
   SELLER_PRIORITIES, CARRIERS, countryForCity,
 } from "./constants";
 import { parseDate } from "./format";
-import type { Booking, Item } from "./types";
+import type { Address, Booking, Item } from "./types";
+import { ADDRESS_FIELDS, normaliseAddress } from "./addresses";
 
 export class ChangeError extends Error {}
 
@@ -108,6 +109,22 @@ export function applyChange(booking: Booking, items: Item[], path: string, value
     if (field === "originCity" && v) b.originCountry = ORIGIN_COUNTRY;
     if (field === "destinationType" && v === "Business address" && b.deliveryAppointmentBooked == null) b.deliveryAppointmentBooked = false;
     return { booking: b, items: its, oldValue: old, newValue: v };
+  }
+
+  if ((parts[0] === "collection" || parts[0] === "delivery") && parts.length <= 2) {
+    const side = parts[0];
+    const old = b[side] ?? null;
+    if (parts.length === 1 && value === null) {
+      b[side] = null;
+      return { booking: b, items: its, oldValue: old, newValue: null };
+    }
+    // Whole block (booking page form) or a single field (chat) merged into what is already there.
+    const merged = parts.length === 1 ? value : { ...(old ?? {}), [parts[1]]: value };
+    if (parts.length === 2 && !ADDRESS_FIELDS.some((f) => f.key === parts[1])) throw new ChangeError(`Unknown address field "${parts[1]}".`);
+    const r = normaliseAddress(merged);
+    if ("errors" in r) throw new ChangeError(r.errors.join(" "));
+    b[side] = r.address;
+    return { booking: b, items: its, oldValue: parts.length === 2 ? old?.[parts[1] as keyof Address] ?? null : old, newValue: parts.length === 2 ? r.address[parts[1] as keyof Address] ?? null : r.address };
   }
 
   if (parts[0] === "hazard" && parts.length === 2) {

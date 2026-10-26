@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { addressGaps } from "@/lib/addresses";
 import { buildCarrierEmail, chosenCarrier } from "@/lib/carrierEmail";
 import { buildView } from "@/lib/view";
 import { getBooking, sessionId, sql } from "@/lib/server/db";
@@ -43,6 +44,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const view = buildView(row.booking, row.items);
   if (!row.booking.sellerConfirmedAt) return NextResponse.json({ error: "Confirm the booking before emailing the carrier." }, { status: 409 });
   if (view.readiness === "grounded") return NextResponse.json({ error: "Fix the critical issues before emailing the carrier." }, { status: 409 });
+  const gaps = addressGaps(row.booking);
+  if (gaps.length)
+    return NextResponse.json({ error: `Add the collection and delivery details first. Missing: ${gaps.join(", ")}.` }, { status: 409 });
 
   const sid = await sessionId();
   const [{ booking_count, session_count }] = (await sql`

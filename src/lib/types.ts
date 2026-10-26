@@ -7,6 +7,18 @@ export type Severity = "Red" | "Amber";
 export type RuleStatus = "pass" | "fail" | "review" | "not_evaluable";
 export type Readiness = "grounded" | "attention" | "cleared";
 
+/** Pickup or drop-off site. Not in the case template or rulebook; needed before emailing a carrier. */
+export interface Address {
+  company: string | null;
+  street: string | null;
+  postcode: string | null;
+  contactName: string | null;
+  phone: string | null;
+  email: string | null;
+  /** Collection: opening hours / slot. Delivery: reference or slot. */
+  notes?: string | null;
+}
+
 export interface Booking {
   bookingId: string | null;
   sellerName: string | null;
@@ -24,6 +36,11 @@ export interface Booking {
   currency: string | null;
   grossWeightKg: number | null;
   deliveryAppointmentBooked: boolean | null;
+
+  /** Where the carrier collects the goods (in the origin city). */
+  collection?: Address | null;
+  /** Where the carrier delivers the goods (in the destination city). */
+  delivery?: Address | null;
 
   /** Carrier id the seller explicitly picked (overrides the recommendation for R-05). */
   chosenCarrier?: string | null;

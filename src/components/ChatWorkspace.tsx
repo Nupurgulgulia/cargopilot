@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { BookingPayload } from "@/lib/server/payload";
+import { AddressesCard } from "./AddressesCard";
 import { BookingSummary } from "./BookingSummary";
 import { FlightDeck } from "./FlightDeck";
 import { Logo, Send } from "./icons";
@@ -126,6 +127,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
         {data ? (
           <>
             <BookingSummary view={data.view} highlight={highlight} run={run} />
+            <AddressesCard view={data.view} run={run} />
             <FlightDeck data={data} run={run} compact />
             <div className="text-right">
               <Link href={`/booking/${data.id}`} className="text-sm font-medium text-teal-700 hover:underline">Open full Flight Deck & report →</Link>

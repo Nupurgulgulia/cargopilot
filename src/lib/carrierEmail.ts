@@ -1,5 +1,6 @@
 // The booking request emailed to the carrier. Built only from checked booking data,
 // so the sender can't turn it into arbitrary content (only a short note is free text).
+import { addressLine, contactLine } from "./addresses";
 import { carrierLabel } from "./carriers";
 import { addDaysISO, gbp0, isoToDisplay, kg, num, plural } from "./format";
 import type { BookingView } from "./types";
@@ -38,6 +39,20 @@ export function buildCarrierEmail(view: BookingView, opts: { replyTo: string; no
     ["Gross weight", b.grossWeightKg != null ? `${kg(b.grossWeightKg)}${wpp != null ? ` (${kg(Math.round(wpp * 10) / 10)} per pallet)` : ""}` : "Not set"],
     ["Declared value", b.declaredValue != null ? gbp0(b.declaredValue) : "Not set"],
   ];
+  // Pickup and drop-off sites sit right after the route, where a carrier looks for them.
+  const sites: [string, string][] = [];
+  for (const [title, a, city, country] of [
+    ["Collection", b.collection, b.originCity, b.originCountry ?? "United Kingdom"],
+    ["Delivery", b.delivery, b.destinationCity, b.destinationCountry],
+  ] as const) {
+    const line = addressLine(a, city);
+    sites.push([`${title} address`, line ? `${line}${country ? `, ${country}` : ""}` : "Not provided"]);
+    const contact = contactLine(a);
+    if (contact) sites.push([`${title} contact`, contact]);
+    if (a?.notes) sites.push([`${title} notes`, a.notes]);
+  }
+  details.splice(details.findIndex(([k]) => k === "Route") + 1, 0, ...sites);
+
   if (c) {
     details.push(["Quoted rate", `${gbp0(c.carrier.pricePerPallet)} per pallet${c.totalCost != null ? `, ${gbp0(c.totalCost)} in total` : ""}`]);
     if (b.readyToShipDate) details.push(["Expected delivery", `${isoToDisplay(addDaysISO(b.readyToShipDate, c.carrier.transitDays))} (${plural(c.carrier.transitDays, "day")} transit)`]);
