@@ -31,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT + MOTION_FLAG }} />
       </head>
       <body className="flex min-h-screen flex-col font-sans antialiased">
-        <header className="sticky top-0 z-40 px-4 pt-3">
+        <header className="header-veil sticky top-0 z-40 px-4 pt-3 pb-1">
           <div className="ticket mx-auto flex h-14 max-w-7xl items-center gap-4 rounded-full py-1.5 pl-3 pr-2 shadow-[0_12px_30px_-12px_rgb(31_26_23/0.55)]">
             <Link href="/" className="flex items-center gap-2.5">
               <Logo className="h-7 w-7" />

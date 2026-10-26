@@ -407,3 +407,21 @@ body {
     opacity: 1 !important;
   }
 }
+
+/* Backdrop behind the floating nav, so page content fades out instead of showing above or beside it. */
+.header-veil::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -14px 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--veil);
+  -webkit-mask-image: linear-gradient(to bottom, #000 72%, transparent);
+  mask-image: linear-gradient(to bottom, #000 72%, transparent);
+}
+:root {
+  --veil: linear-gradient(180deg, #f47b20, #f68a3c);
+}
+:root[data-theme="dusk"] {
+  --veil: #171821;
+}
