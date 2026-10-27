@@ -126,7 +126,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
   return (
     <div className="space-y-4">
       {/* Status hero: a departure board for this booking */}
-      <section ref={deck} id="flightdeck" className="ticket card overflow-hidden">
+      <section ref={deck} id="flightdeck" data-tour="flight-deck" className="ticket card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-4 p-5">
           <div className="min-w-0">
             <div className="label-xs">
@@ -177,7 +177,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
           )}
         </div>
         {b.sellerConfirmedAt && <DocumentStatuses data={data} />}
-        <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist">
+        <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist" data-tour="checklist">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
             return (

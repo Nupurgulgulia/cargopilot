@@ -24,6 +24,7 @@ export function ThemeSwitch() {
     <button
       type="button"
       role="switch"
+      data-tour="theme-switch"
       aria-checked={dark}
       aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
       title={dark ? "Light mode" : "Dark mode"}

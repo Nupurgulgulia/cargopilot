@@ -9,6 +9,7 @@ import { Logo } from "@/components/icons";
 import { CommandPalette } from "@/components/motion/CommandPalette";
 import { SpotlightTracker } from "@/components/motion/primitives";
 import { Toaster } from "@/components/motion/Toaster";
+import { TourHost } from "@/components/tour/Tour";
 import "./globals.css";
 
 // Interface and code fonts. Swap them here; globals.css reads --font-ui and --font-code.
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <Toaster />
         <SpotlightTracker />
         <HtmlFlags />
+        <TourHost />
       </body>
     </html>
   );

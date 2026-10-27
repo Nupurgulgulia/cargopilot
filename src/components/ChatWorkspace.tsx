@@ -98,9 +98,9 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
           {data && <ReadinessBadge r={data.view.readiness} />}
         </div>
         <div ref={thread} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          <Bubble m={{ role: "assistant", content: GREETING }} />
+          <div data-tour="chat-greeting"><Bubble m={{ role: "assistant", content: GREETING }} /></div>
           {msgs.length === 0 && (
-            <div className="space-y-2 pl-9">
+            <div className="space-y-2 pl-9" data-tour="chat-examples">
               <div className="label-xs">Or start from an example</div>
               {SAMPLE_MESSAGES.map((s) => (
                 <button
@@ -167,7 +167,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
             </div>
           </>
         ) : (
-          <div className="card flex h-full min-h-80 flex-col justify-between overflow-hidden">
+          <div className="card flex h-full min-h-80 flex-col justify-between overflow-hidden" data-tour="live-manifest">
             <div className="p-8">
               <div className="eyebrow">Live manifest</div>
               <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900">Your booking takes shape here</h2>

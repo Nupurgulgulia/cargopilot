@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SAMPLE_MESSAGES } from "@/lib/samples";
+import { startTour } from "../tour/Tour";
 import { gsap, reducedMotion } from "./gsap";
 
 type Cmd = { group: string; label: string; hint?: string; run: () => void };
@@ -25,6 +26,9 @@ export function CommandPalette() {
       { group: "Go to", label: "How CargoPilot decides", run: go("/audits?tab=how-it-decides") },
       ...SAMPLE_MESSAGES.map((s) => ({ group: "Start from an example", label: s.title, hint: s.lane, // Full load so a fresh chat starts even when /chat is already open.
         run: () => window.location.assign(`/chat?q=${encodeURIComponent(s.text)}`) })),
+      // The tour opens after the menu closes, so focus can return to the page.
+      { group: "Help", label: "Take the tour", hint: "Guided tour", run: () => setTimeout(startTour, 50) },
+      { group: "Help", label: "Restart tour", hint: "From the start", run: () => setTimeout(startTour, 50) },
       { group: "Files", label: "Download the sample workbook", run: () => { window.location.href = "/samples/cargopilot-sample-audit.xlsx"; } },
       { group: "Files", label: "Download the blank Case 2 template", run: () => { window.location.href = "/samples/Case2_Shipment_Booking_Test_Data_Format.xlsx"; } },
     ];

@@ -26,7 +26,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
           <Truck className="h-5 w-5 text-teal-700" />
           <h3 className="text-base font-bold text-slate-900">Carrier Matchmaker</h3>
         </div>
-        <label className="flex items-center gap-2 text-xs text-slate-600">
+        <label className="flex items-center gap-2 text-xs text-slate-600" data-tour="carrier-priority">
           Priority
           <select
             className="input w-auto py-1 text-xs"
@@ -43,7 +43,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
       {rec.unavailableReason && !top ? (
         <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{rec.unavailableReason}</p>
       ) : top ? (
-        <div className="ticket border-beam mt-3 rounded-3xl p-5">
+        <div className="ticket border-beam mt-3 rounded-3xl p-5" data-tour="carrier-recommended">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               <div className="label-xs text-teal-800">{chosenId ? "Your chosen carrier" : `Recommended · ${rec.priority}`}</div>
@@ -71,7 +71,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
       ) : null}
 
       {rec.candidates.length > 0 && (
-        <div className="mt-4 overflow-x-auto">
+        <div className="mt-4 overflow-x-auto" data-tour="carrier-table">
           <table className="w-full min-w-[560px] text-left text-sm">
             <thead className="font-mono text-[10.5px] uppercase tracking-wider text-slate-500">
               <tr className="border-b border-slate-200">

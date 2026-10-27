@@ -3,6 +3,7 @@ import { Calc, Chat, Check, Truck, Upload } from "@/components/icons";
 import { ReadinessBadge } from "@/components/status";
 import { NumberTicker, Reveal } from "@/components/motion/primitives";
 import { RouteMap } from "@/components/motion/RouteMap";
+import { TourButton, TourOffer } from "@/components/tour/Tour";
 import type { Readiness } from "@/lib/types";
 import { sessionId, sql } from "@/lib/server/db";
 
@@ -56,12 +57,14 @@ export default async function Dashboard() {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
+      <TourOffer />
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div data-tour="overview-title">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
           <p className="mt-1 text-sm text-slate-700">Pre-flight checks for UK → Germany, France and Netherlands freight.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <TourButton />
           <Link href="/upload" className="btn-ghost"><Upload className="h-4 w-4" /> Upload workbook</Link>
           <Link href="/chat" className="btn-dark"><Chat className="h-4 w-4" /> New shipment</Link>
         </div>
@@ -104,7 +107,7 @@ export default async function Dashboard() {
         </Reveal>
       ) : (
         <>
-          <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4" data-tour="counters">
             <Stat label="Bookings checked" value={stats.total} hint="From chat and uploads" />
             <Stat label="Critical issues" value={stats.red} tone="text-red-700" bar="bg-red-500" hint="Must be fixed before shipping" />
             <Stat label="Warnings" value={stats.amber} tone="text-amber-700" bar="bg-amber-500" hint="Worth checking before shipping" />
@@ -112,14 +115,14 @@ export default async function Dashboard() {
           </Reveal>
 
           <Reveal className="grid gap-4 lg:grid-cols-3">
-            <section data-reveal className="card overflow-hidden lg:col-span-2">
+            <section data-reveal data-tour="recent-bookings" className="card overflow-hidden lg:col-span-2">
               <Header title="Recent bookings" action={<Link href="/chat" className="text-xs font-semibold text-teal-700 hover:underline">New shipment →</Link>} />
               {recent.length === 0 ? (
                 <Empty body="Bookings you start in chat will appear here." />
               ) : (
                 <ul>
                   {recent.map((r) => (
-                    <li key={r.id} className="border-t border-[var(--color-line)] first:border-t-0">
+                    <li key={r.id} data-tour-booking={r.id} className="border-t border-[var(--color-line)] first:border-t-0">
                       <Link href={r.source === "chat" ? `/chat/${r.id}` : `/booking/${r.id}`} className="group grid grid-cols-[1fr_auto] items-center gap-3 px-5 py-3 transition-colors hover:bg-slate-50">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 truncate text-sm">
@@ -138,7 +141,7 @@ export default async function Dashboard() {
               )}
             </section>
 
-            <section data-reveal className="card overflow-hidden">
+            <section data-reveal data-tour="recent-audits" className="card overflow-hidden">
               <Header title="Recent audits" action={uploads.length > 0 ? <Link href="/audits" className="text-xs font-semibold text-teal-700 hover:underline">View all →</Link> : undefined} />
               {uploads.length === 0 ? (
                 <Empty body="Upload a workbook to check many bookings at once." />

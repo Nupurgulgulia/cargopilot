@@ -81,7 +81,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
       )}
 
       {/* Summary as bubbles; the long values take a full row. */}
-      <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
+      <dl className="mt-4 grid gap-2 text-sm sm:grid-cols-2" data-tour="confirm-summary">
         {rows.map(([k, v]) => (
           <div key={k} className={`rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 ${WIDE.has(k) ? "sm:col-span-2" : ""}`}>
             <dt className="text-[11px] font-medium text-slate-500">{k}</dt>
@@ -90,6 +90,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
         ))}
       </dl>
 
+      <div data-tour="next-steps">
       <h4 className="mt-5 text-sm font-bold text-slate-900">What happens next</h4>
       <ol className="mt-2 space-y-2 text-sm text-slate-700">
         {[...view.nextSteps, ...(b.sellerConfirmedAt ? documentSteps(data) : [])].map((s, i) => (
@@ -99,6 +100,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
           </li>
         ))}
       </ol>
+      </div>
 
       {/* The result appears where the button was, so it is never off-screen. */}
       {confirmedAt ? (

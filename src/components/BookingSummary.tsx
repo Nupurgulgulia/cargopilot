@@ -34,7 +34,7 @@ export function BookingSummary({ view, highlight, run }: { view: BookingView; hi
   const done = view.missing.length === 0;
 
   return (
-    <section className="paper card rounded-2xl p-4">
+    <section className="paper card rounded-2xl p-4" data-tour="booking-summary">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-slate-900">Booking <span className="num font-semibold">{b.bookingId}</span></h3>
         <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${done ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
