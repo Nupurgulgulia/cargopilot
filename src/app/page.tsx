@@ -59,7 +59,7 @@ export default async function Dashboard() {
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
       <TourOffer />
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div data-tour="overview">
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
           <p className="mt-1 text-sm text-slate-700">Pre-flight checks for UK → Germany, France and Netherlands freight.</p>
         </div>
@@ -107,7 +107,7 @@ export default async function Dashboard() {
         </Reveal>
       ) : (
         <>
-          <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4" data-tour="counters">
+          <Reveal className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <Stat label="Bookings checked" value={stats.total} hint="From chat and uploads" />
             <Stat label="Critical issues" value={stats.red} tone="text-red-700" bar="bg-red-500" hint="Must be fixed before shipping" />
             <Stat label="Warnings" value={stats.amber} tone="text-amber-700" bar="bg-amber-500" hint="Worth checking before shipping" />

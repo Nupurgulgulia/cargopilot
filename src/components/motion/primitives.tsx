@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { gsap, reducedMotion, ScrollTrigger, SplitText, useGSAP } from "./gsap";
 
 /** Blur-fade entrance for every [data-reveal] child, staggered; optionally when scrolled into view. */
-export function Reveal({ children, className, scroll = false, stagger = 0.06, delay = 0, "data-tour": tour }: { children: ReactNode; className?: string; scroll?: boolean; stagger?: number; delay?: number; "data-tour"?: string }) {
+export function Reveal({ children, className, scroll = false, stagger = 0.06, delay = 0 }: { children: ReactNode; className?: string; scroll?: boolean; stagger?: number; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
   useGSAP(
     () => {
@@ -22,7 +22,7 @@ export function Reveal({ children, className, scroll = false, stagger = 0.06, de
     },
     { scope: ref },
   );
-  return <div ref={ref} className={className} data-tour={tour}>{children}</div>;
+  return <div ref={ref} className={className}>{children}</div>;
 }
 
 /** Headline whose words rise and un-blur one by one (GSAP SplitText). */

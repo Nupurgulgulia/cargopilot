@@ -44,3 +44,6 @@ next-env.d.ts
 
 # demo video output
 /demo/
+
+# End-to-end test output (scripts/e2e.mjs)
+/e2e-output/

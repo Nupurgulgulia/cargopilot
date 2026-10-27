@@ -2,7 +2,7 @@
 // Labels use existing booking data only. No hazard marks, dangerous-goods symbols or customs wording.
 import { chosenCarrier } from "./carrierEmail";
 import { carrierLabel } from "./carriers";
-import { isoToDisplay, round2 } from "./format";
+import { isoToDisplay, plural, round2 } from "./format";
 import type { Booking, BookingView } from "./types";
 
 export type LabelFormat = "a6" | "4x6" | "a4";
@@ -78,7 +78,7 @@ export function buildLabels(view: BookingView, which: LabelSelection = "all"): C
     route: `${b.originCity ?? "?"} to ${b.destinationCity ?? "?"}`,
     carrier: carrier ? carrierLabel(carrier.carrier) : "Carrier not chosen",
     collection: b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : "—",
-    totals: `${b.pallets ?? "?"} pallets · ${b.cartons ?? "?"} cartons`,
+    totals: `${b.pallets != null ? plural(b.pallets, "pallet") : "? pallets"} · ${b.cartons != null ? plural(b.cartons, "carton") : "? cartons"}`,
     note: b.labelNote ?? null,
   };
   const out: CargoLabel[] = [];

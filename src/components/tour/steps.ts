@@ -27,7 +27,7 @@ const hasBooking = (c: TourContext) => Boolean(c.bookingId);
 const booking = (c: TourContext) => (c.bookingId ? `/booking/${c.bookingId}` : null);
 
 export const STEPS: TourStep[] = [
-  { id: "overview", path: () => "/", target: "counters", title: "Overview", body: "Pre-flight checks for UK to Germany, France and Netherlands freight. These counters show Bookings checked, Critical issues, Warnings and Cleared for dispatch; your recent bookings and audits are listed below. This tour won't change anything." },
+  { id: "overview", path: () => "/", target: "overview", title: "Overview", body: "Pre-flight checks for UK to Germany, France and Netherlands freight. Your bookings, their checks and your recent audits show on this page. This tour won't change anything." },
   { id: "theme", path: () => null, target: "theme-switch", title: "Light and dark mode", body: "The sun and moon switch changes between light and dark mode. Use it whenever you like; the tour won't change it for you." },
   { id: "chat", path: () => "/chat", target: "chat-examples", title: "New shipment", body: "Describe your shipment as you normally would, or start from one of these examples. You can change any detail at any time." },
   { id: "live-manifest", path: () => "/chat", target: "live-manifest", title: "Live manifest", body: "Your booking takes shape here. Once there's enough to go on, all ten pre-flight checks (R-01 to R-10) run live." },

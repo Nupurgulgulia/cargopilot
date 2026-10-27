@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node scripts/e2e.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.28.0",
