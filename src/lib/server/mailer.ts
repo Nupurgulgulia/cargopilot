@@ -8,7 +8,10 @@ export function mailerEnabled() {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 }
 
-export async function sendMail(msg: { to: string; replyTo: string; subject: string; text: string; html: string }) {
+export async function sendMail(msg: {
+  to: string; replyTo: string; subject: string; text: string; html: string;
+  attachments?: { filename: string; content: Buffer; contentType: string }[];
+}) {
   if (!mailerEnabled()) throw new Error("Email sending isn't set up on this server yet.");
   const port = Number(process.env.SMTP_PORT || 587);
   const transport = nodemailer.createTransport({

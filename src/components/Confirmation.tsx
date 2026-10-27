@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
 import { carrierLabel } from "@/lib/carriers";
+import { runCompliance } from "@/lib/compliance/rules";
+import { buildLabels, labelBlockers } from "@/lib/labels";
 import { addDaysISO, gbp0, isoToDisplay, kg, num } from "@/lib/format";
 import type { BookingPayload } from "@/lib/server/payload";
 import type { RunAction } from "./FlightDeck";
@@ -8,6 +10,24 @@ import { CarrierEmailPanel } from "./CarrierEmailPanel";
 import { Check } from "./icons";
 
 const WIDE = new Set(["Route", "Goods", "Packing", "Carrier", "Estimated delivery"]);
+
+/** Invoice, compliance and label steps, added once the booking is confirmed. */
+function documentSteps(data: BookingPayload): string[] {
+  const c = runCompliance(data.view);
+  const inv = data.invoice;
+  const steps: string[] = [];
+  if (inv.state === "approved") steps.push(`Invoice ${inv.approval!.invoice_number} is approved: attach it to the carrier email.`);
+  else if (inv.state === "out_of_date") steps.push("Invoice approval is out of date: regenerate and approve it again.");
+  else steps.push("Complete and approve the commercial invoice (Commercial invoice, below).");
+  if (c.red || c.amber) steps.push(`Resolve the tax and customs checks: ${c.red} critical, ${c.amber} to review (Tax and customs checks, below). Not tax or legal advice.`);
+  const blocked = labelBlockers(data.view);
+  if (blocked.length) steps.push("Add the missing details so the cargo labels can print.");
+  else {
+    const all = buildLabels(data.view);
+    steps.push(`Print and attach the cargo labels: ${all.filter((l) => l.kind === "Pallet").length} pallet and ${all.filter((l) => l.kind === "Carton").length} carton labels.`);
+  }
+  return steps;
+}
 
 export function Confirmation({ data, run }: { data: BookingPayload; run: RunAction }) {
   const { view } = data;
@@ -72,7 +92,7 @@ export function Confirmation({ data, run }: { data: BookingPayload; run: RunActi
 
       <h4 className="mt-5 text-sm font-bold text-slate-900">What happens next</h4>
       <ol className="mt-2 space-y-2 text-sm text-slate-700">
-        {view.nextSteps.map((s, i) => (
+        {[...view.nextSteps, ...(b.sellerConfirmedAt ? documentSteps(data) : [])].map((s, i) => (
           <li key={i} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
             <span className="num flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-teal-200 bg-teal-50 text-[11px] font-semibold text-teal-700">{i + 1}</span>
             <span className="pt-0.5">{s}</span>

@@ -6,8 +6,9 @@ import {
   SELLER_PRIORITIES, CARRIERS, countryForCity,
 } from "./constants";
 import { parseDate } from "./format";
-import type { Address, Booking, Item } from "./types";
+import type { Address, Booking, ComplianceData, DispatchMode, ExportEvidence, InvoiceData, Item } from "./types";
 import { ADDRESS_FIELDS, normaliseAddress } from "./addresses";
+import { DISPATCH_LABELS, EVIDENCE_TYPES, INCOTERMS_2020, INVOICE_CURRENCIES, PACKAGE_TYPES } from "./compliance/config";
 
 export class ChangeError extends Error {}
 
@@ -183,8 +184,142 @@ export function applyChange(booking: Booking, items: Item[], path: string, value
     return { booking: b, items: its, oldValue: old, newValue: v };
   }
 
+  if (parts[0] === "invoice" || parts[0] === "compliance" || parts[0] === "labelNote") return applyDocChange(b, its, parts, value);
+
   throw new ChangeError(`Unknown path "${path}".`);
 }
+
+// ---------- invoice, compliance and label inputs ----------
+const INVOICE_TEXT = new Set(["invoiceNumber", "orderReference", "paymentMethod", "incotermPlace", "originStatement"]);
+const INVOICE_DATE = new Set(["issueDate", "orderDate", "rateFixedOn"]);
+const INVOICE_MONEY = new Set(["discount", "freightCharge", "insuranceCharge"]);
+const PARTY_FIELDS = new Set(["name", "address", "postcode", "country", "contactName", "phone", "email"]);
+const COMPLIANCE_TEXT = new Set(["exportDeclarationRef", "exportAgent", "classificationCheckedBy", "iossNumber"]);
+const COMPLIANCE_DATE = new Set(["goodsSentOn", "paymentReceivedOn", "eurRateDate"]);
+
+const asDate = (v: unknown, label: string) => {
+  const iso = parseDate(String(v));
+  if (!iso) throw new ChangeError(`${label}: "${v}" isn't a valid date (use DD-MM-YYYY).`);
+  return iso;
+};
+const asBool = (v: unknown, label: string) => {
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (["yes", "y", "true"].includes(s)) return true;
+  if (["no", "n", "false"].includes(s)) return false;
+  throw new ChangeError(`${label} must be Yes or No.`);
+};
+const asMoney = (v: unknown, label: string) => {
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[£€,\s]/g, ""));
+  if (!Number.isFinite(n) || n < 0) throw new ChangeError(`${label} must be an amount of 0 or more.`);
+  return Math.round(n * 100) / 100;
+};
+const eori = (v: unknown) => String(v).replace(/\s+/g, "").toUpperCase();
+
+function coerceInvoice(field: string, value: unknown): unknown {
+  if (value === null || value === "") return null;
+  if (INVOICE_TEXT.has(field)) return String(value).trim().slice(0, field === "originStatement" ? 2000 : 200);
+  if (INVOICE_DATE.has(field)) return asDate(value, field);
+  if (INVOICE_MONEY.has(field)) return asMoney(value, field);
+  switch (field) {
+    case "incoterm": return pick(value, INCOTERMS_2020, "Incoterm");
+    case "currency": return pick(value, INVOICE_CURRENCIES, "Invoice currency");
+    case "exchangeRate": {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n <= 0) throw new ChangeError("Exchange rate must be a positive number (1 GBP = …).");
+      return n;
+    }
+    case "packageType": return pick(value, PACKAGE_TYPES, "Package type");
+    case "buyerType": return pick(value, ["B2B", "B2C"], "Buyer type");
+    case "exporterEori":
+    case "buyerEori": return eori(value);
+    case "chamberCertification": return asBool(value, "Chamber certification");
+    case "dispatchMode": {
+      const s = String(value);
+      const hit = (Object.entries(DISPATCH_LABELS) as [DispatchMode, string][]).find(([k, l]) => k === s || l === s);
+      if (!hit) throw new ChangeError("Choose who moves the goods out of the UK.");
+      return hit[0];
+    }
+  }
+  throw new ChangeError(`Unknown invoice field "${field}".`);
+}
+
+function coerceCompliance(field: string, value: unknown): unknown {
+  if (value === null || value === "") return null;
+  if (COMPLIANCE_TEXT.has(field)) return String(value).trim().slice(0, 200);
+  if (COMPLIANCE_DATE.has(field)) return asDate(value, field);
+  if (field === "article23Licence") return asBool(value, "Article 23 licence");
+  if (field === "eurRate") {
+    const n = Number(value);
+    if (!Number.isFinite(n) || n <= 0) throw new ChangeError("EUR rate must be a positive number (EUR per 1 GBP).");
+    return n;
+  }
+  throw new ChangeError(`Unknown compliance field "${field}".`);
+}
+
+const emptyCompliance = (): ComplianceData => ({
+  exportDeclarationRef: null, exportAgent: null, goodsSentOn: null, paymentReceivedOn: null, evidence: [],
+  classificationCheckedBy: null, article23Licence: null, iossNumber: null, eurRate: null, eurRateDate: null,
+});
+
+function applyDocChange(b: Booking, its: Item[], parts: string[], value: unknown): ChangeResult {
+  if (parts[0] === "labelNote" && parts.length === 1) {
+    const old = b.labelNote ?? null;
+    b.labelNote = value == null || value === "" ? null : String(value).trim().slice(0, 80);
+    return { booking: b, items: its, oldValue: old, newValue: b.labelNote };
+  }
+  if (parts[0] === "invoice") {
+    const inv: Partial<InvoiceData> = { ...(b.invoice ?? {}) };
+    if ((parts[1] === "seller" || parts[1] === "buyer") && parts.length === 3) {
+      if (!PARTY_FIELDS.has(parts[2])) throw new ChangeError(`Unknown ${parts[1]} field "${parts[2]}".`);
+      const party = { ...(inv[parts[1]] ?? {}) } as Record<string, unknown>;
+      const old = party[parts[2]] ?? null;
+      const v = value == null || value === "" ? null : String(value).trim().slice(0, 200);
+      if (parts[2] === "email" && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) throw new ChangeError(`"${v}" isn't a valid email address.`);
+      party[parts[2]] = v;
+      inv[parts[1]] = party as unknown as InvoiceData["seller"];
+      b.invoice = inv as InvoiceData;
+      return { booking: b, items: its, oldValue: old, newValue: v };
+    }
+    if (parts.length !== 2) throw new ChangeError("Bad invoice path.");
+    const v = coerceInvoice(parts[1], value);
+    const old = (inv as Record<string, unknown>)[parts[1]] ?? null;
+    (inv as Record<string, unknown>)[parts[1]] = v;
+    b.invoice = inv as InvoiceData;
+    return { booking: b, items: its, oldValue: old, newValue: v };
+  }
+  // compliance
+  const c: ComplianceData = { ...emptyCompliance(), ...(b.compliance ?? {}) };
+  if (parts[1] === "evidence") {
+    const list = [...(c.evidence ?? [])];
+    if (parts.length === 2) {
+      // Add one evidence record.
+      const e = value as Partial<ExportEvidence> | null;
+      const type = EVIDENCE_TYPES.find((t) => t === e?.type);
+      if (!type) throw new ChangeError(`Evidence type must be one of: ${EVIDENCE_TYPES.join(", ")}.`);
+      const reference = String(e?.reference ?? "").trim().slice(0, 200);
+      if (!reference) throw new ChangeError("Add the evidence reference (for example the airway bill number).");
+      const rec: ExportEvidence = { type, reference, obtainedOn: asDate(e?.obtainedOn, "Date obtained") };
+      list.push(rec);
+      b.compliance = { ...c, evidence: list };
+      return { booking: b, items: its, oldValue: null, newValue: rec };
+    }
+    const i = Number(parts[2]);
+    if (parts.length !== 3 || !list[i] || value !== null) throw new ChangeError("No such evidence record.");
+    const [old] = list.splice(i, 1);
+    b.compliance = { ...c, evidence: list };
+    return { booking: b, items: its, oldValue: old, newValue: null };
+  }
+  if (parts.length !== 2) throw new ChangeError("Bad compliance path.");
+  const v = coerceCompliance(parts[1], value);
+  const old = (c as unknown as Record<string, unknown>)[parts[1]] ?? null;
+  (c as unknown as Record<string, unknown>)[parts[1]] = v;
+  b.compliance = c;
+  return { booking: b, items: its, oldValue: old, newValue: v };
+}
+
+/** Invoice, compliance and label inputs don't change the booking itself, so they don't undo its confirmation. */
+export const isDocumentPath = (path: string) => /^(invoice|compliance|labelNote)(\.|$)/.test(path);
 
 const AFFECTS: Record<string, string[]> = {
   "booking.declaredValue": ["R-02"],

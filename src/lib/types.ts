@@ -62,6 +62,90 @@ export interface Booking {
   importIssues?: DataIssue[];
   /** Source row in the Bookings sheet, when uploaded. */
   sourceRow?: number;
+
+  /** Commercial invoice inputs (after confirmation). Everything else on the invoice comes from the booking. */
+  invoice?: InvoiceData | null;
+  /** UK export / EU import compliance inputs. */
+  compliance?: ComplianceData | null;
+  /** Optional handling note printed on cargo labels, e.g. "Keep dry". */
+  labelNote?: string | null;
+}
+
+export type BuyerType = "B2B" | "B2C";
+/** Who moves the goods out of the UK: decides direct vs indirect export for VAT zero-rating (X-04). */
+export type DispatchMode = "seller_dispatches" | "customer_collects" | "customer_delivers_uk";
+
+export interface Party {
+  name: string | null;
+  address: string | null;
+  postcode: string | null;
+  country: string | null;
+  contactName: string | null;
+  phone: string | null;
+  email: string | null;
+}
+
+export interface InvoiceData {
+  invoiceNumber: string | null;
+  /** ISO yyyy-mm-dd */
+  issueDate: string | null;
+  /** Proforma invoice, purchase order or sales contract reference, and its date. */
+  orderReference: string | null;
+  orderDate: string | null;
+  paymentMethod: string | null;
+  /** Amounts in GBP. */
+  discount: number | null;
+  freightCharge: number | null;
+  insuranceCharge: number | null;
+  incoterm: string | null;
+  incotermPlace: string | null;
+  /** GBP by default; another currency needs a rate (1 GBP = rate) and the date it was fixed. */
+  currency: string | null;
+  exchangeRate: number | null;
+  rateFixedOn: string | null;
+  seller: Party | null;
+  buyer: Party | null;
+  buyerType: BuyerType | null;
+  packageType: string | null;
+  exporterEori: string | null;
+  buyerEori: string | null;
+  /** Statement of origin text reviewed by the user; CargoPilot never writes legal wording itself. */
+  originStatement: string | null;
+  chamberCertification: boolean | null;
+  dispatchMode: DispatchMode | null;
+}
+
+export type EvidenceType =
+  | "NES Goods Departed Message"
+  | "Courier airway bill number"
+  | "Certificate of posting"
+  | "Customs dispatch pack receipt"
+  | "Supplementary accounting records";
+
+export interface ExportEvidence {
+  type: EvidenceType;
+  reference: string;
+  /** ISO yyyy-mm-dd the evidence was obtained. */
+  obtainedOn: string;
+}
+
+export interface ComplianceData {
+  /** X-02: declaration reference, or the agent/forwarder handling it. */
+  exportDeclarationRef: string | null;
+  exportAgent: string | null;
+  /** X-03: date the goods are sent and date full payment was received (time of sale is the earlier). */
+  goodsSentOn: string | null;
+  paymentReceivedOn: string | null;
+  evidence: ExportEvidence[];
+  /** X-05 */
+  classificationCheckedBy: string | null;
+  /** M-05 (Netherlands only, informational). */
+  article23Licence: boolean | null;
+  /** M-06 */
+  iossNumber: string | null;
+  /** EUR per 1 GBP, entered by the user or taken from a dated official source, and its date. */
+  eurRate: number | null;
+  eurRateDate: string | null;
 }
 
 export interface Item {

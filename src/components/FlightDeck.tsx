@@ -1,11 +1,14 @@
 "use client";
 import { useRef, useState } from "react";
+import { runCompliance } from "@/lib/compliance/rules";
 import { RULEBOOK } from "@/lib/constants";
 import { isoToDisplay } from "@/lib/format";
+import { labelBlockers } from "@/lib/labels";
 import type { BookingPayload } from "@/lib/server/payload";
 import type { RuleResult, RuleStatus, Suggestion } from "@/lib/types";
 import { CarrierMatchmaker } from "./CarrierMatchmaker";
 import { Confirmation } from "./Confirmation";
+import { DocumentsPanel } from "./DocumentsPanel";
 import { HsSuggest } from "./HsSuggest";
 import { Calc, Check, Download, Truck } from "./icons";
 import { gsap, reducedMotion, useGSAP } from "./motion/gsap";
@@ -17,7 +20,8 @@ export type Action =
   | { type: "keep"; key: string; ruleId: string; reason: string }
   | { type: "unkeep"; key: string; ruleId: string }
   | { type: "confirm" }
-  | { type: "email"; to: string; replyTo: string; note?: string };
+  | { type: "email"; to: string; replyTo: string; note?: string; attachInvoice?: boolean; buyerCopy?: boolean; buyerEmail?: string }
+  | { type: "approve"; approverName: string };
 
 export type RunAction = (a: Action) => Promise<string | null>;
 
@@ -27,6 +31,28 @@ const code = (city: string | null) => (city ? city.slice(0, 3).toUpperCase() : "
 const LAMP = { grounded: "text-red-500", attention: "text-amber-500", cleared: "text-emerald-500" } as const;
 const BOARD = { grounded: "text-red-700", attention: "text-amber-700", cleared: "text-emerald-700" } as const;
 const BAR: Record<RuleStatus, string> = { pass: "bg-emerald-500", fail: "bg-red-500", review: "bg-amber-500", not_evaluable: "bg-slate-300" };
+
+/** Invoice, Compliance and Labels status after confirmation; each links to its section. */
+function DocumentStatuses({ data }: { data: BookingPayload }) {
+  const c = runCompliance(data.view);
+  const labels = labelBlockers(data.view);
+  const inv = data.invoice.state;
+  const chips: [string, string, string, string][] = [
+    ["Invoice", inv === "approved" ? "Approved" : inv === "out_of_date" ? "Out of date" : "Not approved", inv === "approved" ? "ok" : inv === "out_of_date" ? "bad" : "wait", "#invoice"],
+    ["Compliance", c.red ? `${c.red} critical` : c.amber ? `${c.amber} to review` : "No open issues", c.red ? "bad" : c.amber ? "warn" : "ok", "#compliance"],
+    ["Labels", labels.length ? "Blocked" : "Ready to print", labels.length ? "bad" : "ok", "#labels"],
+  ];
+  const tone = { ok: "bg-emerald-500 text-white", warn: "bg-amber-400 text-[#3d2a00]", bad: "bg-red-500 text-white", wait: "bg-slate-200 text-slate-800" } as Record<string, string>;
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t border-[var(--color-line)] px-5 py-2.5 text-xs">
+      {chips.map(([k, v, t, href]) => (
+        <a key={k} href={href} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-semibold transition-opacity hover:opacity-85 ${tone[t]}`}>
+          {k}: {v}
+        </a>
+      ))}
+    </div>
+  );
+}
 
 /** Ring showing how many of the ten rules pass. */
 function ChecksRing({ passed }: { passed: number }) {
@@ -100,7 +126,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
   return (
     <div className="space-y-4">
       {/* Status hero: a departure board for this booking */}
-      <section ref={deck} className="ticket card overflow-hidden">
+      <section ref={deck} id="flightdeck" className="ticket card overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-4 p-5">
           <div className="min-w-0">
             <div className="label-xs">
@@ -150,6 +176,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
             </span>
           )}
         </div>
+        {b.sellerConfirmedAt && <DocumentStatuses data={data} />}
         <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
@@ -224,6 +251,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
 
       <CarrierMatchmaker view={view} run={run} />
       <Confirmation data={data} run={run} />
+      {!compact && <DocumentsPanel data={data} run={run} />}
 
       {data.history.length > 0 && (
         <details className="card p-4">
@@ -262,7 +290,7 @@ function fmt(v: unknown) {
   return String(v);
 }
 
-function IssueCard({ r, run, compact, description }: { r: RuleResult; run: RunAction; compact: boolean; description: string | null }) {
+export function IssueCard({ r, run, compact, description }: { r: RuleResult; run: RunAction; compact: boolean; description: string | null }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [keeping, setKeeping] = useState(false);

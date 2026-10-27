@@ -18,7 +18,10 @@ export function chosenCarrier(view: BookingView) {
   return rec.selected && rec.selected.eligible !== false ? rec.selected : rec.recommended;
 }
 
-export function buildCarrierEmail(view: BookingView, opts: { replyTo: string; note?: string }): CarrierEmail {
+/** The one sentence added when the approved invoice goes with the email; nothing else changes. */
+export const attachedLine = (invoiceNumber: string) => `The approved commercial invoice ${invoiceNumber} is attached.`;
+
+export function buildCarrierEmail(view: BookingView, opts: { replyTo: string; note?: string; attachedInvoice?: string | null }): CarrierEmail {
   const b = view.booking;
   const c = chosenCarrier(view);
   const route = `${b.originCity ?? "?"}, United Kingdom → ${b.destinationCity ?? "?"}, ${b.destinationCountry ?? "?"}`;
@@ -80,6 +83,7 @@ export function buildCarrierEmail(view: BookingView, opts: { replyTo: string; no
     "Goods:",
     ...goods.map((g) => `- ${g.qty} x ${g.description}${g.sku ? ` (${g.sku})` : ""}, ${g.cartons} cartons, HS ${g.hs}, made in ${g.origin}`),
     ...(note ? ["", `Note from the shipper: ${note}`] : []),
+    ...(opts.attachedInvoice ? ["", attachedLine(opts.attachedInvoice)] : []),
     "",
     `Please reply to ${opts.replyTo} to confirm.`,
     "",
@@ -107,6 +111,7 @@ ${goods
   .join("")}
 </table>
 ${note ? `<p><b>Note from the shipper:</b> ${esc(note)}</p>` : ""}
+${opts.attachedInvoice ? `<p>${esc(attachedLine(opts.attachedInvoice))}</p>` : ""}
 <p>Please reply to <a href="mailto:${esc(opts.replyTo)}">${esc(opts.replyTo)}</a> to confirm.</p>
 <p>Thank you,<br>${esc(sign)}</p>
 <p style="color:#94a3b8;font-size:12px">Sent via CargoPilot. All details were checked against the booking rulebook before sending.</p>

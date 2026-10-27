@@ -1,4 +1,6 @@
+import { COMPLIANCE_RULES, COMPLIANCE_VERSION, IMPORT_VAT, NEEDS_VERIFIED_SOURCE, NOT_ADVICE } from "@/lib/compliance/config";
 import { CARRIERS, RULEBOOK } from "@/lib/constants";
+import { isoToDisplay } from "@/lib/format";
 
 const DECISIONS: [string, string][] = [
   ["Who decides pass or fail?", "Fixed rules in the code, never the AI. The same booking always gets the same result. The AI only reads what you type and writes the replies."],
@@ -13,6 +15,10 @@ const DECISIONS: [string, string][] = [
   ["When carriers tie", "Cheapest: lower cost, then better on-time record, then faster. Fastest: fewer days, then better on-time record, then lower cost. Most reliable: better on-time record, then fewer days, then lower cost."],
   ["Spreadsheet checks", "The template's grey example row is skipped when you add your own rows. We also flag repeated Booking IDs, items with no matching booking, bookings with no items, and numbers or dates we can't read. Nothing unreadable is ever treated as 0."],
   ["What “confirmed” means", "You have approved the booking CargoPilot prepared. CargoPilot does not book the carrier or clear customs for you."],
+  ["Tax and customs checks (X, M, D)", "After you confirm a booking, a second fixed rulebook checks the UK export side (X), the import side in Germany, France or the Netherlands (M) and the documents (D). Red blocks invoice approval; Amber needs fixing or keeping with a note. CargoPilot never submits customs declarations or files VAT."],
+  ["Invoice approval", "You can approve the invoice once no Red items remain in D-01 to D-04 or any X or M rule, and every Amber item is fixed or kept with a note. Approval stores your name, the time, the invoice number and a fingerprint (SHA-256) of the data and of the PDF. Any later change puts the approval out of date, and the audit trail records it."],
+  ["Emailing the invoice", "The carrier email attaches the exact approved PDF, never a regenerated copy. If the invoice isn't approved or is out of date, sending with the attachment is blocked; turn the attachment off to send the email exactly as before."],
+  ["Estimates", "Import VAT and low-value duty figures are estimates, not filings. Import VAT uses the destination's standard rate from the European Commission's Your Europe page, with the date it was checked."],
 ];
 
 export function HowItDecides() {
@@ -43,6 +49,36 @@ export function HowItDecides() {
             ))}
           </tbody>
         </table>
+      </section>
+      <section className="card overflow-x-auto p-4">
+        <h2 className="text-sm font-semibold text-slate-900">Tax and customs rulebook (version {COMPLIANCE_VERSION})</h2>
+        <p className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">{NOT_ADVICE}</p>
+        <table className="mt-2 w-full min-w-[720px] text-sm">
+          <thead className="text-xs text-slate-500">
+            <tr className="text-left"><th className="py-1 pr-3">Rule</th><th className="pr-3">What it checks</th><th className="pr-3">Severity</th><th className="pr-3">Where</th><th>Source · last verified</th></tr>
+          </thead>
+          <tbody>
+            {COMPLIANCE_RULES.map((r) => (
+              <tr key={r.id} className="border-t border-slate-100 align-top">
+                <td className="py-1.5 pr-3 font-semibold">{r.id}<div className="text-xs font-normal text-slate-500">{r.short}</div></td>
+                <td className="pr-3 text-slate-700">{r.rule}</td>
+                <td className={r.severity === "Red" ? "pr-3 font-semibold text-red-700" : "pr-3 font-semibold text-amber-700"}>{r.severity}</td>
+                <td className="pr-3 text-slate-700">{r.jurisdiction}</td>
+                <td className="text-xs"><a className="text-teal-700 underline" href={r.sourceUrl} target="_blank" rel="noreferrer">{r.source}</a><div className="text-slate-500">{isoToDisplay(r.lastVerified)}</div></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <h3 className="mt-4 text-sm font-semibold text-slate-900">Import VAT rates used for estimates</h3>
+        <ul className="mt-1 text-sm text-slate-700">
+          {Object.entries(IMPORT_VAT).map(([country, v]) => (
+            <li key={country}>{country}: {v.standard}% standard ({v.reduced.join("% / ")}% reduced) · <a className="text-teal-700 underline" href={v.sourceUrl} target="_blank" rel="noreferrer">{v.source}</a></li>
+          ))}
+        </ul>
+        <h3 className="mt-4 text-sm font-semibold text-slate-900">Needs a verified source (not checked)</h3>
+        <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">
+          {NEEDS_VERIFIED_SOURCE.map((n) => <li key={n.topic}><b>{n.topic}.</b> {n.why}</li>)}
+        </ul>
       </section>
       <section className="card overflow-x-auto p-4">
         <h2 className="text-sm font-semibold text-slate-900">Carrier rate card (fixed)</h2>

@@ -11,6 +11,8 @@ function title(a: Action): string {
   if (a.type === "email") return "Email sent to the carrier";
   if (a.type === "keep") return `Kept your value for ${a.ruleId}`;
   if (a.type === "unkeep") return `Note removed for ${a.ruleId}`;
+  if (a.type === "approve") return "Invoice approved";
+  if (a.path.startsWith("invoice.") || a.path.startsWith("compliance.") || a.path === "labelNote") return "Saved";
   if (a.path === "booking.chosenCarrier") return a.value ? "Carrier chosen" : "Back to the recommended carrier";
   if (a.path === "booking.sellerPriority") return `Priority set to ${a.value}`;
   return a.ruleId ? `Fix applied for ${a.ruleId}` : "Booking updated";

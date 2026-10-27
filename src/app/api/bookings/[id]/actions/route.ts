@@ -1,9 +1,10 @@
 import { after, NextResponse } from "next/server";
 import { z } from "zod";
-import { applyChange, ChangeError, clearKeptFor } from "@/lib/changes";
+import { applyChange, ChangeError, clearKeptFor, isDocumentPath } from "@/lib/changes";
 import { buildView } from "@/lib/view";
 import { getBooking, logCorrections, saveBooking } from "@/lib/server/db";
 import { syncUpload } from "@/lib/server/googleSync";
+import { ApprovalError, approveInvoice, noteIfApprovalWentStale } from "@/lib/server/invoices";
 import { bookingPayload } from "@/lib/server/payload";
 
 // Error Detective actions: accept a suggested fix, enter a value, keep the original with a reason, confirm.
@@ -12,6 +13,7 @@ const Body = z.discriminatedUnion("type", [
   z.object({ type: z.literal("keep"), key: z.string(), ruleId: z.string(), reason: z.string().trim().min(3).max(500) }),
   z.object({ type: z.literal("unkeep"), key: z.string(), ruleId: z.string() }),
   z.object({ type: z.literal("confirm") }),
+  z.object({ type: z.literal("approve"), approverName: z.string().trim().min(2, "Enter the approver's full name.").max(120) }),
 ]);
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -24,6 +26,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   let booking = row.booking;
   let items = row.items;
+  const before = buildView(booking, items);
+
+  if (a.type === "approve") {
+    try {
+      await approveInvoice(id, before, a.approverName);
+    } catch (e) {
+      if (e instanceof ApprovalError) return NextResponse.json({ error: e.message }, { status: 409 });
+      throw e;
+    }
+    return NextResponse.json(await bookingPayload((await getBooking(id))!, before));
+  }
   try {
     if (a.type === "apply") {
       const r = applyChange(booking, items, a.path, a.value);
@@ -51,9 +64,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     throw e;
   }
 
-  // Any edit after confirmation means the seller has to confirm again.
-  if (a.type !== "confirm" && booking.sellerConfirmedAt) booking = { ...booking, sellerConfirmedAt: null };
+  // Any edit to the booking after confirmation means the seller has to confirm again. Invoice, compliance
+  // and label inputs don't change the booking, so they only put an invoice approval out of date.
+  const documentOnly = (a.type === "apply" && isDocumentPath(a.path)) || ((a.type === "keep" || a.type === "unkeep") && !/^R-\d+/.test(a.ruleId));
+  if (a.type !== "confirm" && !documentOnly && booking.sellerConfirmedAt) booking = { ...booking, sellerConfirmedAt: null };
   const view = await saveBooking(id, booking, items);
+  await noteIfApprovalWentStale(id, before, view);
   // Keep a linked Google Sheet up to date without making the seller wait for it.
   if (row.upload_id) {
     const uploadId = row.upload_id;
