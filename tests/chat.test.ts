@@ -51,7 +51,7 @@ describe("past ready-to-ship date", () => {
     expect(nextFutureAnniversary("2024-02-29", "2026-01-10")).toBeNull();
   });
 
-  it("is held back in chat, not saved, until the seller confirms or corrects it", () => {
+  it("is rejected in chat, never saved, and the seller is asked for today or a later date", () => {
     const held = applyExtraction(emptyBooking(), [], { booking: { readyToShipDate: "23-11-2024" } });
     expect(held.booking.readyToShipDate).toBeNull();
     expect(held.booking.pendingReadyDate).toEqual({ value: "2024-11-23", suggested: expect.stringMatching(/-11-23$/) });
@@ -64,10 +64,12 @@ describe("past ready-to-ship date", () => {
     expect(fixed.booking.readyToShipDate).toBe(held.booking.pendingReadyDate!.suggested);
     expect(fixed.booking.pendingReadyDate).toBeNull();
 
-    // Explicitly keeping the past date saves it, and R-10 then flags it.
-    const kept = applyExtraction(held.booking, held.items, { booking: { readyToShipDate: "23-11-2024" }, keepPastDate: true });
-    expect(kept.booking.readyToShipDate).toBe("2024-11-23");
-    expect(buildView(kept.booking, kept.items).results.find((r) => r.ruleId === "R-10")!.status).toBe("fail");
+    // Saying the past date again (even "keep it") never saves it: the seller is asked for today or later.
+    const again = applyExtraction(held.booking, held.items, { booking: { readyToShipDate: "23-11-2024" }, keepPastDate: true } as never);
+    expect(again.booking.readyToShipDate).toBeNull();
+    expect(again.held?.value).toBe("2024-11-23");
+    const reply = factsForReply(again, buildView(again.booking, again.items), []);
+    expect(reply.heldDate?.today).toMatch(/^\d{2}-\d{2}-\d{4}$/);
   });
 
   it("R-10 offers the corrected date as a one-click fix", () => {

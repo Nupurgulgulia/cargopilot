@@ -59,7 +59,7 @@ export default async function Dashboard() {
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8">
       <TourOffer />
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <div data-tour="overview-title">
+        <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Overview</h1>
           <p className="mt-1 text-sm text-slate-700">Pre-flight checks for UK → Germany, France and Netherlands freight.</p>
         </div>
@@ -115,7 +115,7 @@ export default async function Dashboard() {
           </Reveal>
 
           <Reveal className="grid gap-4 lg:grid-cols-3">
-            <section data-reveal data-tour="recent-bookings" className="card overflow-hidden lg:col-span-2">
+            <section data-reveal className="card overflow-hidden lg:col-span-2">
               <Header title="Recent bookings" action={<Link href="/chat" className="text-xs font-semibold text-teal-700 hover:underline">New shipment →</Link>} />
               {recent.length === 0 ? (
                 <Empty body="Bookings you start in chat will appear here." />
@@ -141,7 +141,7 @@ export default async function Dashboard() {
               )}
             </section>
 
-            <section data-reveal data-tour="recent-audits" className="card overflow-hidden">
+            <section data-reveal className="card overflow-hidden">
               <Header title="Recent audits" action={uploads.length > 0 ? <Link href="/audits" className="text-xs font-semibold text-teal-700 hover:underline">View all →</Link> : undefined} />
               {uploads.length === 0 ? (
                 <Empty body="Upload a workbook to check many bookings at once." />

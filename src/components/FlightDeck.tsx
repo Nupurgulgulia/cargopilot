@@ -177,7 +177,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
           )}
         </div>
         {b.sellerConfirmedAt && <DocumentStatuses data={data} />}
-        <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist" data-tour="checklist">
+        <ol className="grid grid-cols-5 border-t border-[var(--color-line)] sm:grid-cols-10" aria-label="Pre-flight checklist">
           {RULEBOOK.map((r) => {
             const s = ruleStatus(r.id);
             return (
@@ -218,7 +218,7 @@ export function FlightDeck({ data, run, compact = false }: { data: BookingPayloa
       <div ref={issues} className="space-y-4">
       {groups.map((g) =>
         g.items.length ? (
-          <section key={g.title} className="space-y-2">
+          <section key={g.title} data-tour={g.title === "Waiting on details" ? undefined : "issue"} className="space-y-2">
             <div className="flex items-baseline gap-2 px-1">
               <h3 className="text-sm font-semibold text-slate-900">{g.title} ({g.items.length})</h3>
               <span className="text-xs text-slate-500">{g.hint}</span>

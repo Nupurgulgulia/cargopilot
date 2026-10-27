@@ -52,7 +52,6 @@ export const EXTRACTION_SCHEMA = {
     },
     chooseCarrier: { type: "string", enum: ["Carrier A", "Carrier B", "Carrier C"] },
     confirmBooking: { type: "boolean" },
-    keepPastDate: { type: "boolean", description: "true only if the seller explicitly says to keep the past ready-to-ship date that is awaiting confirmation" },
     clarify: { type: "array", items: str_ },
   },
 };
@@ -93,7 +92,6 @@ export const Extraction = z.preprocess(dropNulls, z.object({
   unknownFields: z.array(z.string()).optional().catch(undefined),
   hazardAnswers: z.array(z.object({ ref: z.number().int(), answer: z.enum(["none", "contains"]) })).optional().catch(undefined),
   chooseCarrier: s,
-  keepPastDate: bool,
   confirmBooking: bool,
   clarify: z.array(z.string()).optional().catch(undefined),
 }));
@@ -113,9 +111,9 @@ Rules:
 - grossWeightKg is the TOTAL shipment weight incl. packaging/pallets. Per-unit weights go to item.unitWeightKg.
 - cartons: item.cartons is cartons of that product. booking.cartons is the shipment's total. If the shipment has (or will have) exactly one product and the seller states a carton count, set both.
 - Items: a product line. For a NEW product, omit "ref". To change an existing product, set "ref" to its number in the state list. countryOfOrigin must be one of: ${ITEM_ORIGIN_COUNTRIES.join(", ")} (where it was made, not where it ships from).
-- readyToShipDate as DD-MM-YYYY; resolve relative dates ("next Monday", "tomorrow") using today's date given in the state.
+- readyToShipDate as DD-MM-YYYY; resolve relative dates ("next Monday", "tomorrow") using today's date given in the state. If no year is given, use the next such date on or after today. Copy any full date the seller writes exactly, even if it is in the past (the app rejects past dates itself).
 - If an item in the state has "suggestedHsCode" and the seller accepts it ("yes", "use that", "use the suggested code"), return that item's hsCode = suggestedHsCode (with its ref).
-- If the state has "pastDateAwaitingConfirmation", the seller was asked about a past date. If they accept the suggested date ("yes", "that's right", "the 2026 one"), return readyToShipDate = the suggested date. If they explicitly want to keep the past date, return readyToShipDate = that past date and keepPastDate: true. If they give a different date, return that date.
+- If the state has "pastDateAwaitingConfirmation", the seller was told their past date can't be used. If they accept the suggested date ("yes", "that's right", "the 2026 one"), return readyToShipDate = the suggested date. If they give another date, return that date.
 - If the seller says they don't know / don't have a value, list its path in unknownFields, e.g. "booking.grossWeightKg" or "items.1.hsCode" (1-based item number).
 - collection = the pickup site in the origin city; delivery = the drop-off site in the destination city. Fill company, street, postcode, contactName, phone, email and notes (opening hours, slot or reference) only as stated. Don't put the city in street.
 - hazardAnswers: when the seller confirms whether a flagged item contains a lithium battery, aerosol or flammable liquid.
@@ -213,12 +211,11 @@ export function applyExtraction(booking: Booking, items: Item[], ex: Extraction)
 
   const bk = ex.booking ?? {};
   let held: Applied["held"] = null;
-  // A past ready-to-ship date isn't saved straight away: the seller is asked to confirm or correct it first.
-  // Only an explicit "keep it" saves it (and R-10 then flags it, as the rulebook requires).
+  // A past ready-to-ship date is never saved from chat: a carrier can't collect on it. The seller is asked
+  // for today or a later date instead (with the likely intended date offered).
   if (bk.readyToShipDate) {
     const iso = parseDate(bk.readyToShipDate);
-    const confirmingPending = ex.keepPastDate && iso != null && iso === b.pendingReadyDate?.value;
-    if (iso && iso < todayISO() && !confirmingPending) {
+    if (iso && iso < todayISO()) {
       held = { value: iso, suggested: nextFutureAnniversary(iso, todayISO()) };
       b = { ...b, pendingReadyDate: held };
     } else {
@@ -320,7 +317,7 @@ Style: plain text, warm but brief (max ~110 words). Short lines; use "- " bullet
 - If anything was rejected, explain why in one line and ask again.
 - If "unknownNow" is non-empty, the seller said they don't know those values. Say plainly that the related rulebook check will be flagged until they add it (they can add it later). Never say it doesn't matter.
 - If "hsSuggestions" is non-empty, when you ask for those HS codes offer each suggested code with its short description (e.g. "Suggested HS code for cotton tote bags: 420292 (cases and containers). Reply yes to use it, or tap Suggest in the booking panel for alternatives."). Never invent other codes.
-- If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was NOT saved. Say so plainly (it is N days in the past), ask whether they meant the suggested date, or want to keep the past date anyway, or want a different date. Do this right after the acknowledgement and before asking for anything else.
+- If "heldDate" is present, the seller gave a ready-to-ship date in the past and it was rejected, not saved. Say plainly that it can't be used because it is N days in the past, and ask for today (heldDate.today) or a later date, offering the suggested date if there is one. Never offer to keep the past date. Do this right after the acknowledgement and before asking for anything else.
 - If "flaggedNow" is non-empty, something the seller just gave breaks a rule. Right after the acknowledgement, point out each one in a plain sentence with its suggested fix (for a past date, ask whether they meant the suggested date), and ask them to confirm or correct it. Do this before asking for anything else.
 - If "rechecked" is non-empty, the seller edited a detail they had already given. Right after acknowledging the change, add one line saying the related checks were re-run and what they found, using those results (e.g. "Re-checked pallet weight: 100 kg per pallet, within Carrier A's 500 kg limit."). If a check changed status, say so.
 - If "askFor" is empty and "askAddresses" is non-empty, ask for the collection and delivery address and contact details listed (company, street, postcode, contact name, phone, email), saying the carrier needs them and they are required before emailing the carrier. Group them by Collection and Delivery. Put this after any issues and the carrier line.
@@ -410,6 +407,7 @@ export function factsForReply(
       ? {
           date: isoToDisplay(applied.held.value),
           daysInPast: daysBetweenISO(applied.held.value, todayISO()),
+          today: isoToDisplay(todayISO()),
           suggested: applied.held.suggested ? isoToDisplay(applied.held.suggested) : null,
         }
       : null,
@@ -443,7 +441,7 @@ function templateReply(f: ReturnType<typeof factsForReply>): string {
   for (const r of f.rejected) lines.push(r);
   for (const c of f.clarify) lines.push(c);
   if (f.heldDate)
-    lines.push(`I haven't saved ${f.heldDate.date} as the ready-to-ship date because it is ${f.heldDate.daysInPast} days in the past.${f.heldDate.suggested ? ` Did you mean ${f.heldDate.suggested}?` : ""} Reply with the right date, or say "keep it" to use ${f.heldDate.date} anyway.`);
+    lines.push(`I can't use ${f.heldDate.date} as the ready-to-ship date because it is ${f.heldDate.daysInPast} days in the past, so a carrier couldn't collect on it. Please give today's date (${f.heldDate.today}) or a later one.${f.heldDate.suggested ? ` Did you mean ${f.heldDate.suggested}?` : ""}`);
   for (const i of f.flaggedNow) lines.push(`Please check: ${i.replace(/^R-\d+ (Red|Amber)(?: \[[^\]]*\])?: /, "")}`);
   if (f.justConfirmed) {
     lines.push("Your booking is prepared and confirmed. CargoPilot hasn't sent it to the carrier yet.", ...f.justConfirmed.summary, "What happens next:");

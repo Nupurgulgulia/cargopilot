@@ -246,7 +246,7 @@ function ComplianceCard({ data, run, c }: { data: BookingPayload; run: RunAction
   const groups: [string, RegExp][] = [["UK export (pickup)", /^X-/], [`Import into ${b.destinationCountry ?? "the destination"}`, /^M-/], ["Documents", /^D-/]];
   const open = (r: RuleResult) => r.status === "fail" || (r.status === "not_evaluable" && r.suggestions.length > 0);
   return (
-    <section id="compliance" data-tour="compliance" className="card rounded-2xl p-4">
+    <section id="compliance" className="card rounded-2xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h3 className="text-base font-bold text-slate-900">Tax and customs checks</h3>
@@ -403,7 +403,7 @@ function LabelsCard({ data, run }: { data: BookingPayload; run: RunAction }) {
   const count = buildLabels(view, which).length;
   const url = (download: boolean) => `/api/bookings/${data.id}/labels?format=${format}&which=${which}${download ? "&download=1" : ""}`;
   return (
-    <section id="labels" data-tour="labels" className="card rounded-2xl p-4">
+    <section id="labels" className="card rounded-2xl p-4">
       <h3 className="text-base font-bold text-slate-900">Cargo labels</h3>
       <p className="text-xs text-slate-500">One label per pallet (&ldquo;Pallet n of N&rdquo;) and per carton (&ldquo;Carton n of N&rdquo;), with a barcode of the booking reference and package number.</p>
       <p className="mt-2 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700">{LABEL_NOTE}</p>

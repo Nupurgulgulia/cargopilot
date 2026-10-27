@@ -98,7 +98,7 @@ export function ChatWorkspace({ initial }: { initial: BookingPayload | null }) {
           {data && <ReadinessBadge r={data.view.readiness} />}
         </div>
         <div ref={thread} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-          <div data-tour="chat-greeting"><Bubble m={{ role: "assistant", content: GREETING }} /></div>
+          <Bubble m={{ role: "assistant", content: GREETING }} />
           {msgs.length === 0 && (
             <div className="space-y-2 pl-9" data-tour="chat-examples">
               <div className="label-xs">Or start from an example</div>

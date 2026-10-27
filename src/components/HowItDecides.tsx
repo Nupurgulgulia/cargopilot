@@ -36,7 +36,7 @@ export function HowItDecides() {
           </div>
         ))}
       </section>
-      <section className="card overflow-x-auto p-4" data-tour="rulebook">
+      <section className="card overflow-x-auto p-4">
         <h2 className="text-sm font-semibold text-slate-900">Rulebook (fixed)</h2>
         <table className="mt-2 w-full min-w-[520px] text-sm">
           <tbody>
@@ -50,7 +50,7 @@ export function HowItDecides() {
           </tbody>
         </table>
       </section>
-      <section className="card overflow-x-auto p-4" data-tour="tax-rulebook">
+      <section className="card overflow-x-auto p-4">
         <h2 className="text-sm font-semibold text-slate-900">Tax and customs rulebook (version {COMPLIANCE_VERSION})</h2>
         <p className="mt-1 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">{NOT_ADVICE}</p>
         <table className="mt-2 w-full min-w-[720px] text-sm">
@@ -80,7 +80,7 @@ export function HowItDecides() {
           {NEEDS_VERIFIED_SOURCE.map((n) => <li key={n.topic}><b>{n.topic}.</b> {n.why}</li>)}
         </ul>
       </section>
-      <section className="card overflow-x-auto p-4" data-tour="rate-card">
+      <section className="card overflow-x-auto p-4">
         <h2 className="text-sm font-semibold text-slate-900">Carrier rate card (fixed)</h2>
         <table className="mt-2 w-full min-w-[620px] text-sm">
           <thead className="text-xs text-slate-500">

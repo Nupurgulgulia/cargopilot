@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { gbp0, isoToDisplay, kg, num } from "@/lib/format";
+import { gbp0, isoToDisplay, kg, num, todayISO } from "@/lib/format";
 import type { BookingView } from "@/lib/types";
 import type { RunAction } from "./FlightDeck";
 import { HsSuggest } from "./HsSuggest";
@@ -34,7 +34,7 @@ export function BookingSummary({ view, highlight, run }: { view: BookingView; hi
   const done = view.missing.length === 0;
 
   return (
-    <section className="paper card rounded-2xl p-4" data-tour="booking-summary">
+    <section className="paper card rounded-2xl p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-bold text-slate-900">Booking <span className="num font-semibold">{b.bookingId}</span></h3>
         <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${done ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
@@ -49,9 +49,10 @@ export function BookingSummary({ view, highlight, run }: { view: BookingView; hi
         <F path="booking.destinationCity" label="To" value={b.destinationCity ? `${b.destinationCity}, ${b.destinationCountry}` : null} />
         <F path="booking.destinationType" label="Site type" value={b.destinationType} />
         {b.pendingReadyDate && !b.readyToShipDate ? (
-          <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50 px-3.5 py-2.5" title="This date is in the past, so it hasn't been saved. Confirm or correct it in the chat.">
-            <div className="text-[11px] font-medium text-amber-800">Ready to ship</div>
-            <div className="mt-0.5 text-sm italic text-amber-800">{isoToDisplay(b.pendingReadyDate.value)}? Not saved, past date</div>
+          <div className="rounded-2xl border border-dashed border-red-200 bg-red-50 px-3.5 py-2.5" role="status">
+            <div className="text-[11px] font-medium text-red-800">Ready to ship</div>
+            <div className="mt-0.5 text-sm font-semibold text-red-800">Past date rejected</div>
+            <div className="text-[11px] text-red-700">{isoToDisplay(b.pendingReadyDate.value)} is in the past. Give {isoToDisplay(todayISO())} or later in the chat.</div>
           </div>
         ) : (
           <F path="booking.readyToShipDate" label="Ready to ship" value={b.readyToShipDate ? isoToDisplay(b.readyToShipDate) : null} />

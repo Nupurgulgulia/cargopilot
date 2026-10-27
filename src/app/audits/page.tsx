@@ -25,7 +25,7 @@ export default async function AuditsPage({ searchParams }: { searchParams: Promi
         </div>
       </div>
 
-      <nav className="flex gap-1 border-b border-slate-200" aria-label="Audit sections" data-tour="audit-tabs">
+      <nav className="flex gap-1 border-b border-slate-200" aria-label="Audit sections">
         {TABS.map((t) => (
           <Link
             key={t.key}

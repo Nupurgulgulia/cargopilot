@@ -80,7 +80,7 @@ export function CarrierEmailPanel({ data, run }: { data: BookingPayload; run: Ru
   }
 
   return (
-    <div className="mt-4 rounded-xl border border-slate-200 p-4" data-tour="email-carrier">
+    <div className="mt-4 rounded-xl border border-slate-200 p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-sm font-semibold text-slate-900">Email {name}</h4>
         {sent.length > 0 && (
@@ -150,7 +150,7 @@ export function CarrierEmailPanel({ data, run }: { data: BookingPayload; run: Ru
         </label>
 
         {/* Approved invoice attachment */}
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs" data-tour="email-attach">
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs">
           <label className="flex items-center gap-2 font-medium text-slate-800">
             <input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} />
             Attach approved invoice (PDF)

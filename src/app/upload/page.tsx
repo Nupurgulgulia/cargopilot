@@ -131,7 +131,7 @@ export default function UploadPage() {
       </label>
       {error && <div className="mt-4 rounded-[8px] border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
 
-      <Reveal scroll className="mt-8 grid gap-3 sm:grid-cols-2" data-tour="samples">
+      <Reveal scroll className="mt-8 grid gap-3 sm:grid-cols-2">
         <SampleLink href="/samples/cargopilot-sample-audit.xlsx" title="Try the sample workbook" body="Eight bookings with deliberate mistakes. Download it, then drop it above." />
         <SampleLink href="/samples/Case2_Shipment_Booking_Test_Data_Format.xlsx" title="Blank template" body="The Case 2 format, ready for your own bookings. The grey example row is skipped automatically." />
       </Reveal>

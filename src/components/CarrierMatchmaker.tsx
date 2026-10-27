@@ -26,7 +26,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
           <Truck className="h-5 w-5 text-teal-700" />
           <h3 className="text-base font-bold text-slate-900">Carrier Matchmaker</h3>
         </div>
-        <label className="flex items-center gap-2 text-xs text-slate-600" data-tour="carrier-priority">
+        <label className="flex items-center gap-2 text-xs text-slate-600">
           Priority
           <select
             className="input w-auto py-1 text-xs"
@@ -71,7 +71,7 @@ export function CarrierMatchmaker({ view, run }: { view: BookingView; run: RunAc
       ) : null}
 
       {rec.candidates.length > 0 && (
-        <div className="mt-4 overflow-x-auto" data-tour="carrier-table">
+        <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[560px] text-left text-sm">
             <thead className="font-mono text-[10.5px] uppercase tracking-wider text-slate-500">
               <tr className="border-b border-slate-200">

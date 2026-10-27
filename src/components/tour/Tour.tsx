@@ -15,7 +15,8 @@ const RUN_KEY = "cp-tour-run";
 const START_EVENT = "cp-tour-start";
 
 interface Prefs { seen: boolean; dismissed: boolean }
-interface Run { i: number; dir: 1 | -1; ctx: TourContext }
+/** skipped: stops whose section wasn't on the page this run, so the counter leaves them out. */
+interface Run { i: number; dir: 1 | -1; ctx: TourContext; skipped?: string[] }
 
 const read = <T,>(store: "local" | "session", key: string, fallback: T): T => {
   try {
@@ -96,6 +97,7 @@ export function TourHost() {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [dontShow, setDontShow] = useState(false);
+  const [waiting, setWaiting] = useState(false);
   const card = useRef<HTMLDivElement>(null);
   const nextBtn = useRef<HTMLButtonElement>(null);
   const token = useRef(0);
@@ -143,6 +145,14 @@ export function TourHost() {
     const path = step.path(run.ctx);
     if (path && here() !== path) router.push(path);
     let tries = 0, waitPage = 0;
+    // A page that never arrives takes all of its stops with it, rather than one wait per stop.
+    const skipPage = (p: string) => setRun((r) => {
+      if (!r) return r;
+      let i = r.i;
+      const skipped = [...(r.skipped ?? [])];
+      while (STEPS[i] && STEPS[i].path(r.ctx) === p) { skipped.push(STEPS[i].id); i += r.dir; }
+      return { ...r, i, skipped };
+    });
     const tick = () => {
       if (my !== token.current) return;
       const onPage = !path || here() === path;
@@ -164,18 +174,22 @@ export function TourHost() {
         return;
       }
       // Wait up to 15 s for the page to arrive (a first visit can be slow), then up to 4 s for the element.
-      if (!onPage) { if (++waitPage > 150) { go(run.dir); return; } setTimeout(tick, 100); return; }
+      if (!onPage) { if (++waitPage > 150) { skipPage(path!); return; } setTimeout(tick, 100); return; }
       if (++tries > 40) {
         // Missing on this page: show its Sample if it has one, otherwise skip silently.
         if (onPage && step.sample) setView({ step: run.i, el: null, sample: true });
-        else go(run.dir);
+        else setRun((r) => (r ? { ...r, i: r.i + r.dir, skipped: [...(r.skipped ?? []), step.id] } : r));
         return;
       }
       setTimeout(tick, 100);
     };
     setView(null);
     setRect(null);
+    setWaiting(false);
+    // If the next stop takes a moment (a page loading), say so instead of leaving a blank dimmed screen.
+    const slow = setTimeout(() => { if (my === token.current) setWaiting(true); }, 400);
     tick();
+    return () => clearTimeout(slow);
   }, [run, router, go]);
 
   // Keep the cut-out on the element through scrolls and resizes.
@@ -224,7 +238,7 @@ export function TourHost() {
       if (e.key === "Escape") { e.preventDefault(); close(view && STEPS[view.step]?.finish ? "completed" : "skipped"); return; }
       if (!view) return;
       if (e.key === "ArrowRight" && !STEPS[view.step]?.finish) { e.preventDefault(); go(1); }
-      if (e.key === "ArrowLeft" && visibleIndex(view.step, run.ctx) > 0) { e.preventDefault(); go(-1); }
+      if (e.key === "ArrowLeft" && visibleIndex(view.step, run) > 0) { e.preventDefault(); go(-1); }
       if (e.key === "Tab" && card.current) {
         const f = [...card.current.querySelectorAll<HTMLElement>("button, a[href], input")].filter((x) => !x.hasAttribute("disabled"));
         if (!f.length) return;
@@ -241,8 +255,8 @@ export function TourHost() {
   const step = view ? STEPS[view.step] : null;
   const title = step ? (view!.sample && step.sample ? step.sample.title : step.title) : "";
   const body = step ? (view!.sample && step.sample ? step.sample.body : step.body) : "";
-  const n = view ? visibleIndex(view.step, run.ctx) + 1 : 0;
-  const total = visibleCount(run.ctx);
+  const n = view ? visibleIndex(view.step, run) + 1 : 0;
+  const total = visibleCount(run);
   const pad = 8;
   const t = reducedMotion() ? "none" : "top 200ms ease, left 200ms ease, width 200ms ease, height 200ms ease, opacity 150ms ease";
 
@@ -305,18 +319,24 @@ export function TourHost() {
           </label>
         </div>
       )}
+      {!step && waiting && (
+        <div role="status" className="card fixed bottom-4 right-4 z-[91] flex w-[min(320px,calc(100vw-32px))] items-center justify-between gap-3 rounded-2xl p-4">
+          <span className="text-sm text-slate-700">Loading the next stop…</span>
+          <button type="button" className="text-xs font-semibold text-slate-500 hover:text-slate-900" onClick={() => close("skipped")}>Skip tour</button>
+        </div>
+      )}
     </>,
     document.body,
   );
 }
 
-/** Steps that apply to this run (booking steps only when there's a booking). */
-function applicable(ctx: TourContext) {
-  return STEPS.map((s, i) => ({ s, i })).filter(({ s }) => !s.when || s.when(ctx));
+/** Steps that apply to this run: booking steps only when there's a booking, minus any already skipped. */
+function applicable(run: Run) {
+  return STEPS.map((s, i) => ({ s, i })).filter(({ s }) => (!s.when || s.when(run.ctx)) && !run.skipped?.includes(s.id));
 }
-function visibleCount(ctx: TourContext) {
-  return applicable(ctx).filter(({ s }) => !s.finish).length;
+function visibleCount(run: Run) {
+  return applicable(run).filter(({ s }) => !s.finish).length;
 }
-function visibleIndex(i: number, ctx: TourContext) {
-  return applicable(ctx).findIndex((x) => x.i === i);
+function visibleIndex(i: number, run: Run) {
+  return applicable(run).findIndex((x) => x.i === i);
 }
